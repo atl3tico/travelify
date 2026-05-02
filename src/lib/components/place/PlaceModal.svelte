@@ -37,12 +37,14 @@
 		place = null,
 		dayId,
 		days = [],
+		allPlaces = [],
 		onClose,
 		onSaved,
 	}: {
 		place?: Place | null;
 		dayId: string;
 		days?: { id: string; date: string; title?: string | null }[];
+		allPlaces?: { id: string; name: string; lat: number; lng: number; day_id: string }[];
 		onClose: () => void;
 		onSaved: () => void;
 	} = $props();
@@ -96,31 +98,57 @@
 
 		const placeName = selectedDetails?.name || name;
 
-		// Set duration based on category
-		if (!visitDuration || visitDuration === 60) {
-			visitDuration = categoryDurations[category] || 60;
-		}
-
-		// Fetch description from Wikipedia if not already set
-		if (!description) {
-			try {
-				const langs = ['es', 'en', 'fr'];
-				for (const lang of langs) {
-					const res = await fetch(
-						`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(placeName)}`
-					);
-					if (res.ok) {
-						const data = await res.json();
-						if (data.extract && lang === 'es') {
-							description = data.extract;
-							break;
-						}
-					}
-				}
-			} catch {}
-		}
+		try {
+			const res = await fetch('/api/place-info', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					name: placeName,
+					category,
+					lat: selectedDetails?.lat,
+					lng: selectedDetails?.lng,
+				}),
+			});
+			const data = await res.json();
+			if (data.description && !description) {
+				description = data.description;
+			}
+			if (!visitDuration || visitDuration === 60) {
+				visitDuration = data.duration;
+			}
+		} catch {}
 
 		autofillLoading = false;
+	}
+
+	function suggestDay() {
+		if (!selectedDetails?.lat || !selectedDetails?.lng) return null;
+
+		const dayScores: Record<string, { totalDist: number; count: number }> = {};
+
+		for (const p of allPlaces) {
+			if (!dayScores[p.day_id]) {
+				dayScores[p.day_id] = { totalDist: 0, count: 0 };
+			}
+			const dist = Math.sqrt(
+				Math.pow(p.lat - selectedDetails.lat, 2) + Math.pow(p.lng - selectedDetails.lng, 2)
+			);
+			dayScores[p.day_id].totalDist += dist;
+			dayScores[p.day_id].count++;
+		}
+
+		let bestDayId = dayId;
+		let bestAvg = Infinity;
+
+		for (const [dayIdKey, score] of Object.entries(dayScores)) {
+			const avg = score.totalDist / score.count;
+			if (avg < bestAvg) {
+				bestAvg = avg;
+				bestDayId = dayIdKey;
+			}
+		}
+
+		return bestDayId;
 	}
 	let searchDebounce: ReturnType<typeof setTimeout>;
 
@@ -415,10 +443,25 @@
 				</div>
 
 				<div class="space-y-1">
-					<label class="flex items-center gap-1 text-sm font-medium">
-						<CalendarIcon class="size-3.5" />
-						Día
-					</label>
+					<div class="flex items-center justify-between">
+						<label class="flex items-center gap-1 text-sm font-medium">
+							<CalendarIcon class="size-3.5" />
+							Día
+						</label>
+						{#if selectedDetails && days.length > 1}
+							<button
+								type="button"
+								onclick={() => {
+									const suggested = suggestDay();
+									if (suggested) selectedDayId = suggested;
+								}}
+								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+							>
+								<MapPinIcon class="size-3" />
+								Sugerir día
+							</button>
+						{/if}
+					</div>
 					<select
 						bind:value={selectedDayId}
 						class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"

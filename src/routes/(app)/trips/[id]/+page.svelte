@@ -827,6 +827,7 @@
 		place={editingPlace}
 		dayId={activeDay.id}
 		days={days}
+		allPlaces={places}
 		onClose={() => { showPlaceModal = false; editingPlace = null; }}
 		onSaved={invalidate}
 	/>
