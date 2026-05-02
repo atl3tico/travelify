@@ -48,8 +48,13 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		try {
 			const startDate = days[0].date;
 			const endDate = days[days.length - 1].date;
+			const today = new Date().toISOString().split('T')[0];
+			const isPast = endDate < today;
+			const baseUrl = isPast
+				? 'https://archive-api.open-meteo.com/v1/archive'
+				: 'https://api.open-meteo.com/v1/forecast';
 			const res = await fetch(
-				`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+				`${baseUrl}?latitude=${lat}&longitude=${lng}` +
 				`&daily=temperature_2m_max,temperature_2m_min,weathercode` +
 				`&start_date=${startDate}&end_date=${endDate}` +
 				`&timezone=auto`

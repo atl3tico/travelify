@@ -39,6 +39,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 	let places = $derived(data.places);
 	let activeDay = $derived(days[activeDayIndex]);
 	let weather = $derived(data.weather ?? []);
+	let activeDayWeather = $derived(activeDay ? getWeatherForDate(activeDay.date) : null);
 
 	$effect(() => {
 		activeDayIndex;
@@ -113,6 +114,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 	let showRedistributeModal = $state(false);
 	let redistributeSelectedDays = $state<Set<string>>(new Set());
 	let redistributing = $state(false);
+	let showBudgetModal = $state(false);
 
 	let totalPlaces = $derived(places.length);
 	let totalDays = $derived(days.length);
@@ -418,6 +420,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			.filter((p: { day_id: string }) => p.day_id === days[modalDayIndex]?.id)
 			.sort((a: { order_index: number }, b: { order_index: number }) => a.order_index - b.order_index)
 	);
+	let modalDayWeather = $derived(days[modalDayIndex] ? getWeatherForDate(days[modalDayIndex].date) : null);
 </script>
 
 <svelte:head>
@@ -463,14 +466,6 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 							{/if}
 						</div>
 					</div>
-					<div class="flex shrink-0 gap-1.5 sm:gap-2">
-						<Button variant="outline" size="sm" href="/trips/{data.trip.id}/edit">
-							<PencilIcon class="size-3.5" />
-						</Button>
-						<Button variant="destructive" size="sm" onclick={handleDeleteTrip}>
-							<TrashIcon class="size-3.5" />
-						</Button>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -494,10 +489,10 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 		</div>
 	{/if}
 	{#if totalBudget > 0}
-		<div class="flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs sm:gap-2 sm:px-3 sm:text-sm">
+		<button onclick={() => (showBudgetModal = true)} class="flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs transition-colors hover:border-primary/30 hover:bg-accent sm:gap-2 sm:px-3 sm:text-sm">
 			<WalletIcon class="size-3 text-primary sm:size-4" />
 			<span><span class="font-semibold">{totalBudget.toFixed(0)}€</span> estimado</span>
-		</div>
+		</button>
 	{/if}
 </div>
 
@@ -540,6 +535,12 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 						<h2 class="text-lg font-semibold">{activeDay.title}</h2>
 					{/if}
 					<p class="truncate text-sm capitalize text-muted-foreground">{formatWeekday(activeDay.date)} · {formatDate(activeDay.date)}</p>
+					{#if activeDayWeather}
+						<div class="mt-1 flex items-center gap-2 text-sm">
+							<span class="text-lg">{getWeatherIcon(activeDayWeather.weatherCode)}</span>
+							<span class="font-medium">{activeDayWeather.tempMin}° / {activeDayWeather.tempMax}°</span>
+						</div>
+					{/if}
 				</div>
 				<div class="flex shrink-0 gap-1.5 sm:gap-2">
 					{#if activePlaces.length >= 3}
@@ -807,6 +808,12 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 								Día {modalDay.day_index} — {formatDate(modalDay.date)}
 							{/if}
 						</h2>
+						{#if modalDayWeather}
+							<div class="flex items-center gap-1.5 text-sm text-muted-foreground">
+								<span class="text-base">{getWeatherIcon(modalDayWeather.weatherCode)}</span>
+								<span>{modalDayWeather.tempMin}° / {modalDayWeather.tempMax}°</span>
+							</div>
+						{/if}
 					</div>
 					<button
 						class="rounded-md p-2 min-h-11 min-w-11 flex items-center justify-center hover:bg-accent disabled:opacity-30"
@@ -1124,6 +1131,46 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 				>
 					Guardar vuelos
 				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showBudgetModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={() => (showBudgetModal = false)}>
+		<div class="w-full max-w-md overflow-y-auto rounded-2xl bg-background shadow-2xl" onclick={(e) => e.stopPropagation()}>
+			<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-5 py-4">
+				<h2 class="text-lg font-semibold">Desglose de costes</h2>
+				<button class="rounded-md p-1.5 hover:bg-accent" onclick={() => (showBudgetModal = false)}>
+					<XIcon class="size-5" />
+				</button>
+			</div>
+
+			<div class="space-y-4 p-5">
+				<div class="rounded-lg bg-gradient-to-r from-sky-500/10 to-indigo-500/10 p-4 text-center">
+					<div class="text-3xl font-bold">{totalBudget.toFixed(0)}€</div>
+					<div class="text-sm text-muted-foreground">Coste total estimado</div>
+				</div>
+
+				{#each days as day (day.id)}
+					{@const dayPlaces = getPlacesForDay(day.id).filter((p: { estimated_cost: number }) => p.estimated_cost > 0)}
+					{#if dayPlaces.length > 0}
+						<div class="space-y-2">
+							<div class="flex items-center justify-between text-sm font-medium">
+								<span>Día {day.day_index} — {formatDateShort(day.date)}</span>
+								<span class="font-semibold">{dayPlaces.reduce((s: number, p: { estimated_cost: number }) => s + (p.estimated_cost || 0), 0).toFixed(0)}€</span>
+							</div>
+							<div class="space-y-1">
+								{#each dayPlaces as place (place.id)}
+									<div class="flex items-center justify-between rounded-lg bg-accent/50 px-3 py-2 text-xs">
+										<span class="truncate pr-2">{place.name}</span>
+										<span class="shrink-0 font-medium">{place.estimated_cost.toFixed(0)}€</span>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				{/each}
 			</div>
 		</div>
 	</div>
