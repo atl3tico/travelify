@@ -64,6 +64,7 @@
 		website?: string;
 		phone?: string;
 		google_place_id?: string;
+		plus_code?: string;
 		description?: string;
 	} | null = $state(null);
 
@@ -113,6 +114,9 @@
 			if (data.description && !description) {
 				description = data.description;
 			}
+			if (data.plus_code && selectedDetails) {
+				selectedDetails.plus_code = data.plus_code;
+			}
 			if (!visitDuration || visitDuration === 60) {
 				visitDuration = data.duration;
 			}
@@ -122,16 +126,19 @@
 	}
 
 	function suggestDay() {
-		if (!selectedDetails?.lat || !selectedDetails?.lng) return null;
+		const lat = selectedDetails?.lat ?? place?.lat;
+		const lng = selectedDetails?.lng ?? place?.lng;
+		if (!lat || !lng) return null;
 
 		const dayScores: Record<string, { totalDist: number; count: number }> = {};
 
 		for (const p of allPlaces) {
+			if (p.id === place?.id) continue;
 			if (!dayScores[p.day_id]) {
 				dayScores[p.day_id] = { totalDist: 0, count: 0 };
 			}
 			const dist = Math.sqrt(
-				Math.pow(p.lat - selectedDetails.lat, 2) + Math.pow(p.lng - selectedDetails.lng, 2)
+				Math.pow(p.lat - lat, 2) + Math.pow(p.lng - lng, 2)
 			);
 			dayScores[p.day_id].totalDist += dist;
 			dayScores[p.day_id].count++;
@@ -166,11 +173,12 @@
 		return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 	}
 
-	function handlePlaceSelected(details: NonNullable<typeof selectedDetails>) {
+	async function handlePlaceSelected(details: NonNullable<typeof selectedDetails>) {
 		selectedDetails = details;
 		name = details.name;
 		category = details.category;
 		visitDuration = categoryDurations[category] || 60;
+		await autofillDetails();
 	}
 
 	async function searchAddress(q: string) {
@@ -228,6 +236,7 @@
 					website: data.result.website,
 					phone: data.result.formatted_phone_number,
 					google_place_id: prediction.place_id,
+					plus_code: data.result.plus_code?.global_code || '',
 					description: editorialSummary,
 				};
 				name = selectedDetails.name;
@@ -277,6 +286,7 @@
 				form.set('lng', selectedDetails.lng.toString());
 				form.set('address', selectedDetails.address);
 				if (selectedDetails.google_place_id) form.set('google_place_id', selectedDetails.google_place_id);
+				if (selectedDetails.plus_code) form.set('plus_code', selectedDetails.plus_code);
 				if (selectedDetails.photo_url) form.set('photo_url', selectedDetails.photo_url);
 				if (selectedDetails.description) form.set('description', selectedDetails.description);
 				if (selectedDetails.rating) form.set('rating', selectedDetails.rating.toString());
@@ -305,6 +315,7 @@
 			form.set('lng', selectedDetails.lng.toString());
 			form.set('address', selectedDetails.address);
 			if (selectedDetails.google_place_id) form.set('google_place_id', selectedDetails.google_place_id);
+			if (selectedDetails.plus_code) form.set('plus_code', selectedDetails.plus_code);
 			form.set('visit_duration', visitDuration.toString());
 			form.set('notes', notes);
 			form.set('description', description);
@@ -441,38 +452,6 @@
 						</div>
 					{/if}
 				</div>
-
-				<div class="space-y-1">
-					<div class="flex items-center justify-between">
-						<label class="flex items-center gap-1 text-sm font-medium">
-							<CalendarIcon class="size-3.5" />
-							Día
-						</label>
-						{#if selectedDetails && days.length > 1}
-							<button
-								type="button"
-								onclick={() => {
-									const suggested = suggestDay();
-									if (suggested) selectedDayId = suggested;
-								}}
-								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-							>
-								<MapPinIcon class="size-3" />
-								Sugerir día
-							</button>
-						{/if}
-					</div>
-					<select
-						bind:value={selectedDayId}
-						class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-					>
-						{#each days as d, i (d.id)}
-							<option value={d.id}>
-								Día {i + 1} — {formatDateShort(d.date)}{d.title ? ` · ${d.title}` : ''}
-							</option>
-						{/each}
-					</select>
-				</div>
 			{:else}
 				{#if selectedDetails}
 					<div class="flex items-center gap-3 rounded-lg border border-border p-3">
@@ -499,6 +478,38 @@
 			{/if}
 
 			{#if isEdit || selectedDetails}
+				<div class="space-y-1">
+					<div class="flex items-center justify-between">
+						<label class="flex items-center gap-1 text-sm font-medium">
+							<CalendarIcon class="size-3.5" />
+							Día
+						</label>
+						{#if (isEdit || selectedDetails) && days.length > 1}
+							<button
+								type="button"
+								onclick={() => {
+									const suggested = suggestDay();
+									if (suggested) selectedDayId = suggested;
+								}}
+								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+							>
+								<MapPinIcon class="size-3" />
+								Sugerir día
+							</button>
+						{/if}
+					</div>
+					<select
+						bind:value={selectedDayId}
+						class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					>
+						{#each days as d, i (d.id)}
+							<option value={d.id}>
+								Día {i + 1} — {formatDateShort(d.date)}{d.title ? ` · ${d.title}` : ''}
+							</option>
+						{/each}
+					</select>
+				</div>
+
 				<div class="space-y-1">
 					<label class="text-sm font-medium">Categoría</label>
 					<div class="flex flex-wrap gap-2">

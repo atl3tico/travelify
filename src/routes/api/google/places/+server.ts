@@ -8,7 +8,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	if (placeId) {
 		const res = await fetch(
-			`https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,name,formatted_address,photos,rating,website,formatted_phone_number,types,url,editorial_summary,reviews,business_status,opening_hours,price_level&key=${PUBLIC_GOOGLE_MAPS_API_KEY}`
+			`https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,name,formatted_address,photos,rating,website,formatted_phone_number,types,url,editorial_summary,reviews,business_status,opening_hours,price_level,plus_code&key=${PUBLIC_GOOGLE_MAPS_API_KEY}`
 		);
 		const data = await res.json();
 		return json(data);

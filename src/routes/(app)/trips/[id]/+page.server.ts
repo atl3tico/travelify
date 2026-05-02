@@ -52,6 +52,7 @@ export const actions: Actions = {
 		const lng = parseFloat(form.get('lng') as string);
 		const address = (form.get('address') as string) || null;
 		const googlePlaceId = (form.get('google_place_id') as string) || null;
+		const plusCode = (form.get('plus_code') as string) || null;
 		const visitDuration = parseInt(form.get('visit_duration') as string) || 60;
 		const notes = (form.get('notes') as string) || '';
 		const photoUrl = (form.get('photo_url') as string) || null;
@@ -94,6 +95,7 @@ export const actions: Actions = {
 			lng,
 			address,
 			google_place_id: googlePlaceId,
+			plus_code: plusCode,
 			visit_duration: visitDuration,
 			notes,
 			order_index: nextIndex,
@@ -153,6 +155,7 @@ export const actions: Actions = {
 		if (form.has('lng')) updates.lng = parseFloat(form.get('lng') as string);
 		if (form.has('address')) updates.address = (form.get('address') as string) || null;
 		if (form.has('google_place_id')) updates.google_place_id = (form.get('google_place_id') as string) || null;
+		if (form.has('plus_code')) updates.plus_code = (form.get('plus_code') as string) || null;
 		if (form.has('photo_url')) updates.photo_url = (form.get('photo_url') as string) || null;
 		if (form.has('rating')) updates.rating = form.get('rating') ? parseFloat(form.get('rating') as string) : null;
 
@@ -202,6 +205,157 @@ export const actions: Actions = {
 		for (const item of orders) {
 			await supabase.from('places').update({ order_index: item.order_index }).eq('id', item.id);
 		}
+	},
+
+	redistributePlaces: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401);
+
+		const form = await request.formData();
+		const tripId = form.get('trip_id') as string;
+		const selectedDayIds = JSON.parse(form.get('day_ids') as string) as string[];
+
+		if (!tripId || !selectedDayIds || selectedDayIds.length < 2) return fail(400);
+
+		// Get all places from selected days
+		const { data: allPlaces, error: fetchErr } = await supabase
+			.from('places')
+			.select('*')
+			.in('day_id', selectedDayIds);
+
+		if (fetchErr || !allPlaces || allPlaces.length === 0) return fail(400, { error: 'No hay lugares' });
+
+		// Separate places into Disneyland vs Paris groups by proximity
+		const DISNEY_LAT = 48.8674;
+		const DISNEY_LNG = 2.7834;
+
+		function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+			const R = 6371;
+			const dLat = ((lat2 - lat1) * Math.PI) / 180;
+			const dLng = ((lng2 - lng1) * Math.PI) / 180;
+			const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+			return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		}
+
+		const disneyPlaces = allPlaces.filter(p => haversine(p.lat, p.lng, DISNEY_LAT, DISNEY_LNG) < 15);
+		const parisPlaces = allPlaces.filter(p => haversine(p.lat, p.lng, DISNEY_LAT, DISNEY_LNG) >= 15);
+
+		// Determine how many days Disney needs based on place count
+		const targetPerDay = Math.ceil(allPlaces.length / selectedDayIds.length);
+		const disneyDayCount = disneyPlaces.length > 0
+			? Math.max(1, Math.ceil(disneyPlaces.length / targetPerDay))
+			: 0;
+
+		// First N selected days = Disney, rest = Paris
+		const disneyDayIds = selectedDayIds.slice(0, disneyDayCount);
+		const parisDayIds = selectedDayIds.slice(disneyDayCount);
+
+		const assignments: Record<string, string> = {};
+
+		// Distribute Disney places evenly across Disney days
+		if (disneyPlaces.length > 0 && disneyDayIds.length > 0) {
+			const sorted = disneyPlaces.sort((a, b) => a.order_index - b.order_index);
+			for (let i = 0; i < sorted.length; i++) {
+				assignments[sorted[i].id] = disneyDayIds[i % disneyDayIds.length];
+			}
+		}
+
+		// Distribute Paris places using k-means across Paris days
+		if (parisPlaces.length > 0 && parisDayIds.length > 0) {
+			const k = parisDayIds.length;
+			const centroids = parisDayIds.map((_, i) => {
+				const seed = parisPlaces[i % parisPlaces.length];
+				return { lat: seed.lat, lng: seed.lng };
+			});
+
+			let parisAssignments = new Array(parisPlaces.length).fill(0);
+
+			for (let iter = 0; iter < 50; iter++) {
+				for (let i = 0; i < parisPlaces.length; i++) {
+					let bestC = 0;
+					let bestDist = Infinity;
+					for (let c = 0; c < k; c++) {
+						const d = Math.pow(parisPlaces[i].lat - centroids[c].lat, 2) + Math.pow(parisPlaces[i].lng - centroids[c].lng, 2);
+						if (d < bestDist) { bestDist = d; bestC = c; }
+					}
+					parisAssignments[i] = bestC;
+				}
+
+				for (let c = 0; c < k; c++) {
+					const cluster = parisPlaces.filter((_, i) => parisAssignments[i] === c);
+					if (cluster.length === 0) continue;
+					centroids[c].lat = cluster.reduce((s, p) => s + p.lat, 0) / cluster.length;
+					centroids[c].lng = cluster.reduce((s, p) => s + p.lng, 0) / cluster.length;
+				}
+			}
+
+			// Balance
+			const targetSize = Math.ceil(parisPlaces.length / k);
+			for (let pass = 0; pass < 10; pass++) {
+				const overloaded: number[] = [];
+				const underloaded: number[] = [];
+				for (let c = 0; c < k; c++) {
+					const count = parisAssignments.filter(a => a === c).length;
+					if (count > targetSize) overloaded.push(c);
+					if (count < targetSize) underloaded.push(c);
+				}
+				if (overloaded.length === 0 || underloaded.length === 0) break;
+
+				for (const oc of overloaded) {
+					const ocCount = parisAssignments.filter(a => a === oc).length;
+					if (ocCount <= targetSize) continue;
+
+					let bestIdx = -1;
+					let bestDist = Infinity;
+					for (let i = 0; i < parisPlaces.length; i++) {
+						if (parisAssignments[i] !== oc) continue;
+						for (const uc of underloaded) {
+							const d = Math.pow(parisPlaces[i].lat - centroids[uc].lat, 2) + Math.pow(parisPlaces[i].lng - centroids[uc].lng, 2);
+							if (d < bestDist) { bestDist = d; bestIdx = i; }
+						}
+					}
+					if (bestIdx >= 0) {
+						let bestUc = underloaded[0];
+						let bestUDist = Infinity;
+						for (const uc of underloaded) {
+							const d = Math.pow(parisPlaces[bestIdx].lat - centroids[uc].lat, 2) + Math.pow(parisPlaces[bestIdx].lng - centroids[uc].lng, 2);
+							if (d < bestUDist) { bestUDist = d; bestUc = uc; }
+						}
+						parisAssignments[bestIdx] = bestUc;
+					}
+				}
+			}
+
+			// Sort within clusters and assign
+			const clusters: Record<number, typeof parisPlaces> = {};
+			for (let c = 0; c < k; c++) {
+				clusters[c] = parisPlaces
+					.filter((_, i) => parisAssignments[i] === c)
+					.sort((a, b) => a.order_index - b.order_index);
+			}
+
+			for (let c = 0; c < k; c++) {
+				const targetDayId = parisDayIds[c];
+				for (let i = 0; i < clusters[c].length; i++) {
+					assignments[clusters[c][i].id] = targetDayId;
+				}
+			}
+		}
+
+		// Batch update
+		for (const [placeId, dayId] of Object.entries(assignments)) {
+			const dayPlaces = Object.entries(assignments)
+				.filter(([, d]) => d === dayId)
+				.map(([id]) => id);
+			const orderIdx = dayPlaces.indexOf(placeId);
+
+			await supabase
+				.from('places')
+				.update({ day_id: dayId, order_index: orderIdx })
+				.eq('id', placeId);
+		}
+
+		return { success: true };
 	},
 
 	deleteTrip: async ({ params, locals: { supabase, safeGetSession } }) => {

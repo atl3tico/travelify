@@ -29,6 +29,7 @@
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
 	import PlaneIcon from '@lucide/svelte/icons/plane';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import ShuffleIcon from '@lucide/svelte/icons/shuffle';
 
 	let { data }: { data: PageData } = $props();
 	let activeDayIndex = $state(0);
@@ -106,6 +107,9 @@
 	let dragOverIndex = $state<number | null>(null);
 	let optimizing = $state(false);
 	let suggestingTimes = $state(false);
+	let showRedistributeModal = $state(false);
+	let redistributeSelectedDays = $state<Set<string>>(new Set());
+	let redistributing = $state(false);
 
 	let totalPlaces = $derived(places.length);
 	let totalDays = $derived(days.length);
@@ -322,6 +326,42 @@
 		invalidate();
 	}
 
+	function openRedistributeModal() {
+		redistributeSelectedDays = new Set([activeDay.id]);
+		showRedistributeModal = true;
+	}
+
+	async function handleRedistribute() {
+		const selected = [...redistributeSelectedDays];
+		if (selected.length < 2) {
+			toast.info('Selecciona al menos 2 días');
+			return;
+		}
+
+		redistributing = true;
+		const form = new FormData();
+		form.set('trip_id', data.trip.id);
+		form.set('day_ids', JSON.stringify(selected));
+
+		const res = await fetch('?/redistributePlaces', { method: 'POST', body: form });
+		redistributing = false;
+
+		if (res.ok) {
+			toast.success('Actividades redistribuidas por proximidad');
+			showRedistributeModal = false;
+			invalidate();
+		} else {
+			toast.error('Error al redistribuir');
+		}
+	}
+
+	function toggleRedistributeDay(dayId: string) {
+		const next = new Set(redistributeSelectedDays);
+		if (next.has(dayId)) next.delete(dayId);
+		else next.add(dayId);
+		redistributeSelectedDays = next;
+	}
+
 	async function invalidate() {
 		await invalidateAll();
 	}
@@ -489,6 +529,18 @@
 						>
 							<SparklesIcon class="size-3.5" />
 							<span class="hidden sm:inline">{suggestingTimes ? 'Sugiriendo...' : 'Horarios'}</span>
+						</Button>
+					{/if}
+					{#if totalPlaces >= days.length * 2}
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={openRedistributeModal}
+							disabled={redistributing}
+							title="Redistribuir actividades entre días"
+						>
+							<ShuffleIcon class="size-3.5" />
+							<span class="hidden sm:inline">{redistributing ? 'Redistribuyendo...' : 'Redistribuir'}</span>
 						</Button>
 					{/if}
 					<Button
@@ -821,6 +873,68 @@
 
 <!-- Spacer for sticky footer -->
 <div class="h-14 sm:h-16"></div>
+
+{#if showRedistributeModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={() => (showRedistributeModal = false)}>
+		<div class="w-full max-w-md overflow-y-auto rounded-2xl bg-background shadow-2xl" onclick={(e) => e.stopPropagation()}>
+			<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-5 py-4">
+				<h2 class="text-lg font-semibold">Redistribuir actividades</h2>
+				<button class="rounded-md p-1.5 hover:bg-accent" onclick={() => (showRedistributeModal = false)}>
+					<XIcon class="size-5" />
+				</button>
+			</div>
+
+			<div class="space-y-4 p-5">
+				<p class="text-sm text-muted-foreground">
+					Selecciona los días entre los que quieres equilibrar las actividades. Se redistribuirán por proximidad geográfica.
+				</p>
+
+				<div class="space-y-2">
+					{#each days as d, i (d.id)}
+						{@const dayPlaces = getPlacesForDay(d.id)}
+						<button
+							type="button"
+							onclick={() => toggleRedistributeDay(d.id)}
+							class="flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors {redistributeSelectedDays.has(d.id)
+								? 'border-primary bg-primary/10'
+								: 'border-border hover:border-primary/30'}"
+						>
+							<div class="flex items-center gap-2">
+								<div class="flex size-5 items-center justify-center rounded border {redistributeSelectedDays.has(d.id)
+									? 'border-primary bg-primary'
+									: 'border-muted-foreground'}">
+									{#if redistributeSelectedDays.has(d.id)}
+										<svg class="size-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+										</svg>
+									{/if}
+								</div>
+								<span>Día {i + 1} — {formatDateShort(d.date)}</span>
+							</div>
+							<span class="text-xs text-muted-foreground">{dayPlaces.length} {dayPlaces.length === 1 ? 'lugar' : 'lugares'}</span>
+						</button>
+					{/each}
+				</div>
+
+				{#if redistributeSelectedDays.size >= 2}
+					{@const totalSelected = places.filter((p: { day_id: string }) => redistributeSelectedDays.has(p.day_id)).length}
+					<div class="rounded-lg bg-accent/50 p-3 text-xs text-muted-foreground">
+						{totalSelected} actividades se redistribuirán entre {redistributeSelectedDays.size} días
+						(~{Math.ceil(totalSelected / redistributeSelectedDays.size)} por día)
+					</div>
+				{/if}
+
+				<button
+					onclick={handleRedistribute}
+					disabled={redistributeSelectedDays.size < 2 || redistributing}
+					class="w-full rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:from-sky-600 hover:to-indigo-600 disabled:opacity-50"
+				>
+					{redistributing ? 'Redistribuyendo...' : 'Redistribuir'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 {#if showPlaceModal}
 	<PlaceModal

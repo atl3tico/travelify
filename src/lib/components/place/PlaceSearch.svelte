@@ -22,6 +22,7 @@
 		category: string;
 		website?: string;
 		phone?: string;
+		plus_code?: string;
 	}
 
 	let {
@@ -109,6 +110,7 @@
 					category: mapCategory(data.result.types || []),
 					website: data.result.website,
 					phone: data.result.formatted_phone_number,
+					plus_code: data.result.plus_code?.global_code || '',
 				};
 
 				if (onPlaceSelected) {
@@ -139,6 +141,7 @@
 		form.set('lng', selectedDetails.lng.toString());
 		form.set('address', selectedDetails.address);
 		form.set('google_place_id', selectedPrediction.place_id);
+		if (selectedDetails.plus_code) form.set('plus_code', selectedDetails.plus_code);
 		form.set('visit_duration', visitDuration.toString());
 		form.set('notes', notes);
 		if (selectedDetails.photo_url) form.set('photo_url', selectedDetails.photo_url);
