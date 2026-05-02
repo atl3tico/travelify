@@ -522,40 +522,40 @@
 				</div>
 			{:else}
 				<div class="space-y-3">
-					{#each activePlaces as place, i (place.id)}
-						<div
-							class="group relative h-32 overflow-hidden rounded-xl border border-border transition-all sm:h-40 {dragIndex === i
-								? 'border-primary opacity-50'
-								: dragOverIndex === i
-									? 'border-primary/50'
-									: zoomPlaceId === place.id
-										? 'border-primary'
-										: 'border-border'}"
-							draggable="true"
-							ondragstart={() => { dragIndex = i; dragOverIndex = null; }}
-							ondragover={(e) => { e.preventDefault(); dragOverIndex = i; }}
-							ondragleave={() => { if (dragOverIndex === i) dragOverIndex = null; }}
-							ondrop={() => handleReorder()}
-							ondragend={() => { dragIndex = null; dragOverIndex = null; }}
-							onclick={() => { zoomPlaceId = zoomPlaceId === place.id ? null : place.id; }}
-							role="listitem"
-						>
-							<!-- Background Image -->
-							<img
-								src={place.photo_url || getPlaceImage(place.category || 'place', place.name)}
-								alt={place.name}
-								class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-							/>
+				{#each activePlaces as place, index (place.id)}
+					<div
+						class="group relative h-32 overflow-hidden rounded-xl border border-border transition-all sm:h-40 {dragIndex === index
+							? 'border-primary opacity-50'
+							: dragOverIndex === index
+								? 'border-primary/50'
+								: zoomPlaceId === place.id
+									? 'border-primary'
+									: 'border-border'}"
+						draggable="true"
+						ondragstart={() => { dragIndex = index; dragOverIndex = null; }}
+						ondragover={(e) => { e.preventDefault(); dragOverIndex = index; }}
+						ondragleave={() => { if (dragOverIndex === index) dragOverIndex = null; }}
+						ondrop={() => handleReorder()}
+						ondragend={() => { dragIndex = null; dragOverIndex = null; }}
+						onclick={() => { zoomPlaceId = zoomPlaceId === place.id ? null : place.id; }}
+						role="listitem"
+					>
+						<!-- Background Image -->
+						<img
+							src={place.photo_url || getPlaceImage(place.category || 'place', place.name)}
+							alt={place.name}
+							class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+						/>
 
-							<!-- Gradient Overlay -->
-							<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+						<!-- Gradient Overlay -->
+						<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
 
-							<!-- Letter Badge -->
-							<div class="absolute top-2 left-2 sm:top-3 sm:left-3">
-								<span class="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
-									{String.fromCharCode(65 + i)}
-								</span>
-							</div>
+						<!-- Letter Badge -->
+						<div class="absolute top-2 left-2 sm:top-3 sm:left-3">
+							<span class="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
+								{String.fromCharCode(65 + index)}
+							</span>
+						</div>
 
 							<!-- Actions -->
 							<div class="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 sm:top-3 sm:right-3" onclick={(e) => e.stopPropagation()}>
@@ -754,6 +754,9 @@
 								<h3 class="mt-1 font-medium">{place.name}</h3>
 								{#if place.address}
 									<p class="text-xs text-muted-foreground">{place.address}</p>
+								{/if}
+								{#if place.description}
+									<p class="mt-1 text-xs text-muted-foreground line-clamp-2">{place.description}</p>
 								{/if}
 								<div class="mt-1 flex flex-wrap items-center gap-2">
 									{#if place.rating}

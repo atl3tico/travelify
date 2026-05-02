@@ -6,6 +6,7 @@
 
 	let email = $state('');
 	let password = $state('');
+	let rememberMe = $state(false);
 	let error = $state('');
 	let loading = $state(false);
 
@@ -14,7 +15,13 @@
 	async function handleLogin() {
 		loading = true;
 		error = '';
-		const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+		const { error: err } = await supabase.auth.signInWithPassword({
+			email,
+			password,
+			options: {
+				remember: rememberMe,
+			},
+		});
 		if (err) {
 			error = err.message;
 			loading = false;
@@ -67,6 +74,16 @@
 					required
 					class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
 				/>
+			</div>
+
+			<div class="flex items-center gap-2">
+				<input
+					id="remember"
+					type="checkbox"
+					bind:checked={rememberMe}
+					class="size-4 rounded border-input text-primary focus:ring-primary"
+				/>
+				<label for="remember" class="text-sm text-muted-foreground cursor-pointer">Recordarme</label>
 			</div>
 
 			<Button type="submit" disabled={loading} class="w-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0">

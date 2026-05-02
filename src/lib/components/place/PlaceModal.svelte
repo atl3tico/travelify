@@ -61,6 +61,7 @@
 		website?: string;
 		phone?: string;
 		google_place_id?: string;
+		description?: string;
 	} | null = $state(null);
 
 	let name = $state(place?.name ?? '');
@@ -126,7 +127,23 @@
 			if (loc) {
 				const photos = data.result?.photos;
 				const photoRef = photos?.[0]?.photo_reference;
-				const photoUrl = photoRef ? `/api/google/photo?ref=${encodeURIComponent(photoRef)}&maxwidth=800` : undefined;
+				let photoUrl = photoRef ? `/api/google/photo?ref=${encodeURIComponent(photoRef)}&maxwidth=800` : undefined;
+				let editorialSummary = data.result?.editorial_summary?.overview || '';
+
+				if (!photoUrl || !editorialSummary) {
+					try {
+						const placeName = data.result.name || prediction.structured_formatting?.main_text || prediction.description;
+						const wikiRes = await fetch(`/api/unsplash?q=${encodeURIComponent(placeName)}`);
+						const wikiData = await wikiRes.json();
+						if (!photoUrl && wikiData.url) {
+							photoUrl = wikiData.url;
+						}
+						if (!editorialSummary && wikiData.description) {
+							editorialSummary = wikiData.description;
+						}
+					} catch {}
+				}
+
 				selectedDetails = {
 					lat: loc.lat,
 					lng: loc.lng,
@@ -138,9 +155,13 @@
 					website: data.result.website,
 					phone: data.result.formatted_phone_number,
 					google_place_id: prediction.place_id,
+					description: editorialSummary,
 				};
 				name = selectedDetails.name;
 				category = selectedDetails.category;
+				if (editorialSummary && !description) {
+					description = editorialSummary;
+				}
 				changingPlace = false;
 			}
 		} catch { }
@@ -181,6 +202,7 @@
 				form.set('address', selectedDetails.address);
 				if (selectedDetails.google_place_id) form.set('google_place_id', selectedDetails.google_place_id);
 				if (selectedDetails.photo_url) form.set('photo_url', selectedDetails.photo_url);
+				if (selectedDetails.description) form.set('description', selectedDetails.description);
 				if (selectedDetails.rating) form.set('rating', selectedDetails.rating.toString());
 			}
 
@@ -213,6 +235,7 @@
 			form.set('start_time', startTime);
 			form.set('category', category);
 			if (selectedDetails.photo_url) form.set('photo_url', selectedDetails.photo_url);
+			if (selectedDetails.description) form.set('description', selectedDetails.description);
 			if (selectedDetails.rating) form.set('rating', selectedDetails.rating.toString());
 			if (selectedDetails.website) form.set('website', selectedDetails.website);
 			if (selectedDetails.phone) form.set('phone', selectedDetails.phone);
