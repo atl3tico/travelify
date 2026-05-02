@@ -9,6 +9,7 @@
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import LoaderIcon from '@lucide/svelte/icons/loader-2';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 
 	interface Place {
 		id: string;
@@ -78,6 +79,49 @@
 	let searchQuery = $state('');
 	let searchResults: { place_id: string; description: string; structured_formatting?: { main_text: string; secondary_text?: string } }[] = $state([]);
 	let searchLoading = $state(false);
+	let autofillLoading = $state(false);
+
+	const categoryDurations: Record<string, number> = {
+		attraction: 90,
+		restaurant: 60,
+		hotel: 30,
+		shopping: 45,
+		transport: 30,
+		place: 60,
+	};
+
+	async function autofillDetails() {
+		if (!selectedDetails && !name) return;
+		autofillLoading = true;
+
+		const placeName = selectedDetails?.name || name;
+
+		// Set duration based on category
+		if (!visitDuration || visitDuration === 60) {
+			visitDuration = categoryDurations[category] || 60;
+		}
+
+		// Fetch description from Wikipedia if not already set
+		if (!description) {
+			try {
+				const langs = ['es', 'en', 'fr'];
+				for (const lang of langs) {
+					const res = await fetch(
+						`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(placeName)}`
+					);
+					if (res.ok) {
+						const data = await res.json();
+						if (data.extract && lang === 'es') {
+							description = data.extract;
+							break;
+						}
+					}
+				}
+			} catch {}
+		}
+
+		autofillLoading = false;
+	}
 	let searchDebounce: ReturnType<typeof setTimeout>;
 
 	const categories = [
@@ -98,6 +142,7 @@
 		selectedDetails = details;
 		name = details.name;
 		category = details.category;
+		visitDuration = categoryDurations[category] || 60;
 	}
 
 	async function searchAddress(q: string) {
@@ -161,6 +206,9 @@
 				category = selectedDetails.category;
 				if (editorialSummary && !description) {
 					description = editorialSummary;
+				}
+				if (!visitDuration || visitDuration === 60) {
+					visitDuration = categoryDurations[category] || 60;
 				}
 				changingPlace = false;
 			}
@@ -450,7 +498,22 @@
 				</div>
 
 				<div class="space-y-1">
-					<label class="text-sm font-medium">Descripción</label>
+					<div class="flex items-center justify-between">
+						<label class="text-sm font-medium">Descripción</label>
+						<button
+							type="button"
+							onclick={autofillDetails}
+							disabled={autofillLoading || (!selectedDetails && !name)}
+							class="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed"
+						>
+							{#if autofillLoading}
+								<LoaderIcon class="size-3 animate-spin" />
+							{:else}
+								<SparklesIcon class="size-3" />
+							{/if}
+							Autocompletar
+						</button>
+					</div>
 					<textarea
 						bind:value={description}
 						rows="2"
