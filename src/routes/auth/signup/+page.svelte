@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { goto } from '$app/navigation';
+	import { Button } from '$lib/button';
+	import logo from '$lib/assets/logo.svg';
+	import MailIcon from '@lucide/svelte/icons/mail';
 
 	let email = $state('');
 	let password = $state('');
@@ -26,26 +29,28 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Crear cuenta — Travelify</title>
+</svelte:head>
+
 <div class="flex min-h-[80vh] items-center justify-center">
 	<div class="w-full max-w-sm space-y-6">
 		{#if emailSent}
-			<div class="text-center space-y-4">
-				<div class="text-4xl">✉️</div>
-				<h1 class="text-2xl font-bold">Check your email</h1>
+			<div class="space-y-4 text-center">
+				<MailIcon class="mx-auto size-12 text-sky-500" />
+				<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Revisa tu correo</h1>
 				<p class="text-sm text-muted-foreground">
-					We sent a confirmation link to <strong>{email}</strong>. Click it to verify your account.
+					Enviamos un enlace de confirmación a <strong>{email}</strong>. Haz clic para verificar tu cuenta.
 				</p>
-				<a
-					href="/auth/login"
-					class="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-				>
-					Go to Sign in
-				</a>
+				<Button variant="outline" href="/auth/login" class="mt-4">
+					Ir a iniciar sesión
+				</Button>
 			</div>
 		{:else}
 			<div class="text-center">
-				<h1 class="text-2xl font-bold">Create account</h1>
-				<p class="mt-1 text-sm text-muted-foreground">Start planning your trips</p>
+				<img src={logo} alt="Travelify" class="mx-auto mb-3 h-8 w-auto" />
+				<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Crear cuenta</h1>
+				<p class="mt-1 text-sm text-muted-foreground">Empieza a planificar tus viajes</p>
 			</div>
 
 			<form
@@ -56,44 +61,40 @@
 				class="space-y-4"
 			>
 				{#if error}
-					<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+					<div class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
 				{/if}
 
 				<div class="space-y-2">
-					<label for="email" class="text-sm font-medium">Email</label>
+					<label for="email" class="text-sm font-medium">Correo electrónico</label>
 					<input
 						id="email"
 						type="email"
 						bind:value={email}
 						required
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+						class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
 					/>
 				</div>
 
 				<div class="space-y-2">
-					<label for="password" class="text-sm font-medium">Password</label>
+					<label for="password" class="text-sm font-medium">Contraseña</label>
 					<input
 						id="password"
 						type="password"
 						bind:value={password}
 						required
 						minlength="6"
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+						class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
 					/>
 				</div>
 
-				<button
-					type="submit"
-					disabled={loading}
-					class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-				>
-					{loading ? 'Creating account...' : 'Sign up'}
-				</button>
+				<Button type="submit" disabled={loading} class="w-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0">
+					{loading ? 'Creando cuenta...' : 'Registrarse'}
+				</Button>
 			</form>
 
 			<p class="text-center text-sm text-muted-foreground">
-				Already have an account?
-				<a href="/auth/login" class="text-primary underline hover:text-primary/80">Sign in</a>
+				¿Ya tienes cuenta?
+				<a href="/auth/login" class="text-primary underline hover:text-primary/80">Inicia sesión</a>
 			</p>
 		{/if}
 	</div>

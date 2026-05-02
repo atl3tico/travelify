@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { goto } from '$app/navigation';
+	import { Button } from '$lib/button';
+	import logo from '$lib/assets/logo.svg';
 
 	let email = $state('');
 	let password = $state('');
@@ -22,11 +24,16 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Iniciar sesión — Travelify</title>
+</svelte:head>
+
 <div class="flex min-h-[80vh] items-center justify-center">
 	<div class="w-full max-w-sm space-y-6">
 		<div class="text-center">
-			<h1 class="text-2xl font-bold">Sign in</h1>
-			<p class="mt-1 text-sm text-muted-foreground">Welcome back to Travelify</p>
+			<img src={logo} alt="Travelify" class="mx-auto mb-3 h-8 w-auto" />
+			<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Iniciar sesión</h1>
+			<p class="mt-1 text-sm text-muted-foreground">Bienvenido de vuelta a Travelify</p>
 		</div>
 
 		<form
@@ -37,43 +44,39 @@
 			class="space-y-4"
 		>
 			{#if error}
-				<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+				<div class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
 			{/if}
 
 			<div class="space-y-2">
-				<label for="email" class="text-sm font-medium">Email</label>
+				<label for="email" class="text-sm font-medium">Correo electrónico</label>
 				<input
 					id="email"
 					type="email"
 					bind:value={email}
 					required
-					class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
 				/>
 			</div>
 
 			<div class="space-y-2">
-				<label for="password" class="text-sm font-medium">Password</label>
+				<label for="password" class="text-sm font-medium">Contraseña</label>
 				<input
 					id="password"
 					type="password"
 					bind:value={password}
 					required
-					class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
 				/>
 			</div>
 
-			<button
-				type="submit"
-				disabled={loading}
-				class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-			>
-				{loading ? 'Signing in...' : 'Sign in'}
-			</button>
+			<Button type="submit" disabled={loading} class="w-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0">
+				{loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+			</Button>
 		</form>
 
 		<p class="text-center text-sm text-muted-foreground">
-			Don't have an account?
-			<a href="/auth/signup" class="text-primary underline hover:text-primary/80">Sign up</a>
+			¿No tienes cuenta?
+			<a href="/auth/signup" class="text-primary underline hover:text-primary/80">Regístrate</a>
 		</p>
 	</div>
 </div>
