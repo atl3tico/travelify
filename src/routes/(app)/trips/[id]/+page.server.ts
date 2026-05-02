@@ -417,6 +417,19 @@ export const actions: Actions = {
 		await supabase.from('days').update({ travel_mode: travelMode }).eq('id', dayId);
 	},
 
+	updateTransportCost: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401);
+
+		const form = await request.formData();
+		const dayId = form.get('day_id') as string;
+		const transportCost = parseFloat(form.get('transport_cost') as string) || 0;
+
+		if (!dayId) return fail(400);
+
+		await supabase.from('days').update({ transport_cost: transportCost }).eq('id', dayId);
+	},
+
 	updatePlaceTime: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401);

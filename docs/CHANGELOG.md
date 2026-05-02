@@ -19,7 +19,7 @@
 
 - [x] Presupuesto estimado del viaje
   - **Qué hace**: Campo `estimated_cost` en cada actividad, total mostrado en la barra de stats. Input en el modal de actividad.
-  - **Migration**: `supabase/migrations/007_add_estimated_cost.sql` (needs manual run)
+   - **Migration**: `supabase/migrations/007_add_estimated_cost.sql` ✅ applied
   - **Files**: `src/routes/(app)/trips/[id]/+page.server.ts`, `src/routes/(app)/trips/[id]/+page.svelte`, `src/lib/components/place/PlaceModal.svelte`
 
 ### Bugs

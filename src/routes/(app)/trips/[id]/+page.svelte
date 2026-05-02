@@ -59,6 +59,8 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 	let showDayModal = $state(false);
 	let showFlightModal = $state(false);
 	let zoomPlaceId = $state<string | null>(null);
+	let editingTransportCost = $state(false);
+	let transportCostInput = $state('0');
 
 	let flightFields = $state<Record<string, string>>({});
 
@@ -119,7 +121,9 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 	let totalPlaces = $derived(places.length);
 	let totalDays = $derived(days.length);
 	let accommodations = $derived(data.accommodations);
-	let totalBudget = $derived(places.reduce((sum: number, p: { estimated_cost: number }) => sum + (p.estimated_cost || 0), 0));
+	let placesBudget = $derived(places.reduce((sum: number, p: { estimated_cost: number }) => sum + (p.estimated_cost || 0), 0));
+	let transportBudget = $derived(days.reduce((sum: number, d: { transport_cost: number }) => sum + (d.transport_cost || 0), 0));
+	let totalBudget = $derived(placesBudget + transportBudget);
 
 	let activeAccommodation = $derived(() => {
 		if (!activeDay) return null;
@@ -145,6 +149,14 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 		form.set('day_id', dayId);
 		form.set('travel_mode', mode);
 		await fetch('?/updateTravelMode', { method: 'POST', body: form });
+	}
+
+	async function handleTransportCostChange(dayId: string, cost: number) {
+		const form = new FormData();
+		form.set('day_id', dayId);
+		form.set('transport_cost', cost.toString());
+		await fetch('?/updateTransportCost', { method: 'POST', body: form });
+		invalidateAll();
 	}
 
 	function formatDate(dateStr: string) {
@@ -541,6 +553,41 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 							<span class="font-medium">{activeDayWeather.tempMin}° / {activeDayWeather.tempMax}°</span>
 						</div>
 					{/if}
+					{#if editingTransportCost}
+						<div class="mt-1 flex items-center gap-2">
+							<input
+								type="number"
+								bind:value={transportCostInput}
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										handleTransportCostChange(activeDay.id, parseFloat(transportCostInput) || 0);
+										editingTransportCost = false;
+									}
+									if (e.key === 'Escape') {
+										editingTransportCost = false;
+										transportCostInput = (activeDay.transport_cost || 0).toString();
+									}
+								}}
+								class="w-20 rounded-lg border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+								placeholder="0"
+								min="0"
+								step="5"
+							/>
+							<span class="text-sm text-muted-foreground">€ transporte</span>
+						</div>
+					{:else}
+						{#if activeDay.transport_cost && activeDay.transport_cost > 0}
+							<button onclick={() => { editingTransportCost = true; transportCostInput = activeDay.transport_cost.toString(); }} class="mt-1 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+								<span>🚌</span>
+								<span>{activeDay.transport_cost.toFixed(0)}€ transporte</span>
+							</button>
+						{:else}
+							<button onclick={() => { editingTransportCost = true; transportCostInput = '0'; }} class="mt-1 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+								<span>🚌</span>
+								<span>Añadir transporte</span>
+							</button>
+						{/if}
+					{/if}
 				</div>
 				<div class="flex shrink-0 gap-1.5 sm:gap-2">
 					{#if activePlaces.length >= 3}
@@ -646,7 +693,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 						</div>
 
 							<!-- Actions -->
-							<div class="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 sm:top-3 sm:right-3" onclick={(e) => e.stopPropagation()}>
+							<div class="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:top-3 sm:right-3" onclick={(e) => e.stopPropagation()}>
 								<button
 									onclick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`, '_blank')}
 									class="rounded-md bg-black/50 p-1.5 text-white backdrop-blur hover:bg-blue-500/70"
@@ -1151,6 +1198,34 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 					<div class="text-3xl font-bold">{totalBudget.toFixed(0)}€</div>
 					<div class="text-sm text-muted-foreground">Coste total estimado</div>
 				</div>
+
+				{#if placesBudget > 0}
+					<div class="rounded-lg border border-border p-3">
+						<div class="flex items-center justify-between text-sm font-medium mb-2">
+							<span>🎟️ Actividades</span>
+							<span class="font-semibold">{placesBudget.toFixed(0)}€</span>
+						</div>
+					</div>
+				{/if}
+
+				{#if transportBudget > 0}
+					<div class="rounded-lg border border-border p-3">
+						<div class="flex items-center justify-between text-sm font-medium mb-2">
+							<span>🚌 Transporte</span>
+							<span class="font-semibold">{transportBudget.toFixed(0)}€</span>
+						</div>
+						<div class="space-y-1">
+							{#each days as day (day.id)}
+								{#if day.transport_cost && day.transport_cost > 0}
+									<div class="flex items-center justify-between rounded-lg bg-accent/50 px-3 py-2 text-xs">
+										<span>Día {day.day_index} — {formatDateShort(day.date)}</span>
+										<span class="shrink-0 font-medium">{day.transport_cost.toFixed(0)}€</span>
+									</div>
+								{/if}
+							{/each}
+						</div>
+					</div>
+				{/if}
 
 				{#each days as day (day.id)}
 					{@const dayPlaces = getPlacesForDay(day.id).filter((p: { estimated_cost: number }) => p.estimated_cost > 0)}
