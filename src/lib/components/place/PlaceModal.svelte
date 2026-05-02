@@ -531,7 +531,7 @@
 					</div>
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
+				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<div class="space-y-1">
 						<label class="flex items-center gap-1 text-sm font-medium">
 							<ClockIcon class="size-3.5" />
