@@ -28,6 +28,7 @@
 	import RouteIcon from '@lucide/svelte/icons/route';
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
 	import PlaneIcon from '@lucide/svelte/icons/plane';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 
 	let { data }: { data: PageData } = $props();
 	let activeDayIndex = $state(0);
@@ -104,6 +105,7 @@
 	let dragIndex = $state<number | null>(null);
 	let dragOverIndex = $state<number | null>(null);
 	let optimizing = $state(false);
+	let suggestingTimes = $state(false);
 
 	let totalPlaces = $derived(places.length);
 	let totalDays = $derived(days.length);
@@ -270,6 +272,56 @@
 		invalidate();
 	}
 
+	async function suggestTimes() {
+		const items = [...activePlaces];
+		const withoutTime = items.filter((p: { start_time: string | null }) => !p.start_time);
+		if (withoutTime.length === 0) {
+			toast.info('Todas las actividades ya tienen horario');
+			return;
+		}
+
+		suggestingTimes = true;
+		let currentMinutes = 9 * 60; // Start at 9:00 AM
+
+		// Find first place with start_time to anchor the schedule
+		for (const place of items) {
+			if (place.start_time) {
+				const [h, m] = place.start_time.split(':').map(Number);
+				currentMinutes = h * 60 + m;
+				break;
+			}
+		}
+
+		const updates: { id: string; start_time: string }[] = [];
+
+		for (const place of items) {
+			if (place.start_time) {
+				const [h, m] = place.start_time.split(':').map(Number);
+				currentMinutes = h * 60 + m + (place.visit_duration || 60);
+			} else {
+				// Add 15 min travel buffer
+				currentMinutes += 15;
+				const hh = Math.floor(currentMinutes / 60) % 24;
+				const mm = currentMinutes % 60;
+				const timeStr = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+				updates.push({ id: place.id, start_time: timeStr });
+				currentMinutes += place.visit_duration || 60;
+			}
+		}
+
+		// Batch update
+		for (const update of updates) {
+			const form = new FormData();
+			form.set('place_id', update.id);
+			form.set('start_time', update.start_time);
+			await fetch('?/updatePlaceTime', { method: 'POST', body: form });
+		}
+
+		suggestingTimes = false;
+		toast.success(`Horarios sugeridos para ${updates.length} actividad${updates.length !== 1 ? 'es' : ''}`);
+		invalidate();
+	}
+
 	async function invalidate() {
 		await invalidateAll();
 	}
@@ -425,6 +477,18 @@
 						>
 							<RouteIcon class="size-3.5" />
 							<span class="hidden sm:inline">{optimizing ? 'Optimizando...' : 'Optimizar'}</span>
+						</Button>
+					{/if}
+					{#if activePlaces.length > 0}
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={suggestTimes}
+							disabled={suggestingTimes}
+							title="Sugerir horarios"
+						>
+							<SparklesIcon class="size-3.5" />
+							<span class="hidden sm:inline">{suggestingTimes ? 'Sugiriendo...' : 'Horarios'}</span>
 						</Button>
 					{/if}
 					<Button

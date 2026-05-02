@@ -225,6 +225,25 @@ export const actions: Actions = {
 		await supabase.from('days').update({ travel_mode: travelMode }).eq('id', dayId);
 	},
 
+	updatePlaceTime: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401);
+
+		const form = await request.formData();
+		const placeId = form.get('place_id') as string;
+		const startTime = form.get('start_time') as string;
+
+		if (!placeId || !startTime) return fail(400);
+
+		const { error: err } = await supabase
+			.from('places')
+			.update({ start_time: startTime })
+			.eq('id', placeId);
+
+		if (err) return fail(500, { error: err.message });
+		return { success: true };
+	},
+
 	addAccommodation: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401);
