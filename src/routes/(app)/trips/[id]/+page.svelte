@@ -553,7 +553,7 @@
 						<!-- Letter Badge -->
 						<div class="absolute top-2 left-2 sm:top-3 sm:left-3">
 							<span class="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
-								{String.fromCharCode(65 + index)}
+								{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[index]}
 							</span>
 						</div>
 
