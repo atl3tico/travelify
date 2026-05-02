@@ -78,3 +78,46 @@ export function getCityImage(destination: string): string {
 
 	return fallbacks[hashString(key) % fallbacks.length];
 }
+
+const placeCategoryImages: Record<string, string[]> = {
+	restaurant: [
+		'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1414235077428-338989a2fd8c?w=800&h=400&fit=crop',
+	],
+	attraction: [
+		'https://images.unsplash.com/photo-1533669955142-6a73332af4db?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1597466599360-3b9775841aec?w=800&h=400&fit=crop',
+	],
+	hotel: [
+		'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&h=400&fit=crop',
+	],
+	shopping: [
+		'https://images.unsplash.com/photo-1481480044787-4e451946cc7e?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1567449303078-57ad995bd329?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&h=400&fit=crop',
+	],
+	transport: [
+		'https://images.unsplash.com/photo-1436491865332-7a61a109db05?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&h=400&fit=crop',
+	],
+	place: [
+		'https://images.unsplash.com/photo-1504893524553-b855bce32c67?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=400&fit=crop',
+		'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop',
+	],
+};
+
+export function getPlaceImage(category: string, name: string): string {
+	const images = placeCategoryImages[category] || placeCategoryImages.place;
+	const index = hashString(name) % images.length;
+	return images[index];
+}

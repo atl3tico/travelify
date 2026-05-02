@@ -8,7 +8,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/button';
 	import { Badge } from '$lib/badge';
-	import { getCityImage } from '$lib/utils/city-images';
+	import { getCityImage, getPlaceImage } from '$lib/utils/city-images';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -477,15 +477,11 @@
 							role="listitem"
 						>
 							<!-- Background Image -->
-							{#if place.photo_url}
-								<img
-									src={place.photo_url}
-									alt={place.name}
-									class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-								/>
-							{:else}
-								<div class="absolute inset-0 bg-gradient-to-br from-muted to-muted/50"></div>
-							{/if}
+							<img
+								src={place.photo_url || getPlaceImage(place.category || 'place', place.name)}
+								alt={place.name}
+								class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+							/>
 
 							<!-- Gradient Overlay -->
 							<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
@@ -681,13 +677,7 @@
 					{#each modalPlaces as place, i (place.id)}
 						<div class="flex gap-3 rounded-xl border border-border p-3">
 							<!-- Photo or number -->
-							{#if place.photo_url}
-								<img src={place.photo_url} alt={place.name} class="size-16 shrink-0 rounded-lg object-cover" />
-							{:else}
-								<div class="flex size-16 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-									<span class="text-lg font-bold text-primary">{i + 1}</span>
-								</div>
-							{/if}
+							<img src={place.photo_url || getPlaceImage(place.category || 'place', place.name)} alt={place.name} class="size-16 shrink-0 rounded-lg object-cover" />
 
 							<div class="min-w-0 flex-1">
 								<div class="flex items-center gap-2">
