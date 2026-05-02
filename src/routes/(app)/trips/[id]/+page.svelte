@@ -22,20 +22,23 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import ShareIcon from '@lucide/svelte/icons/share-2';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
-	import BedIcon from '@lucide/svelte/icons/bed';
-	import StickyNoteIcon from '@lucide/svelte/icons/sticky-note';
-	import ExpandIcon from '@lucide/svelte/icons/maximize-2';
-	import RouteIcon from '@lucide/svelte/icons/route';
-	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
-	import PlaneIcon from '@lucide/svelte/icons/plane';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
-	import ShuffleIcon from '@lucide/svelte/icons/shuffle';
+import BedIcon from '@lucide/svelte/icons/bed';
+import StickyNoteIcon from '@lucide/svelte/icons/sticky-note';
+import ExpandIcon from '@lucide/svelte/icons/maximize-2';
+import RouteIcon from '@lucide/svelte/icons/route';
+import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
+import PlaneIcon from '@lucide/svelte/icons/plane';
+import SparklesIcon from '@lucide/svelte/icons/sparkles';
+import ShuffleIcon from '@lucide/svelte/icons/shuffle';
+import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+import WalletIcon from '@lucide/svelte/icons/wallet';
 
 	let { data }: { data: PageData } = $props();
 	let activeDayIndex = $state(0);
 	let days = $derived(data.days);
 	let places = $derived(data.places);
 	let activeDay = $derived(days[activeDayIndex]);
+	let weather = $derived(data.weather ?? []);
 
 	$effect(() => {
 		activeDayIndex;
@@ -114,6 +117,7 @@
 	let totalPlaces = $derived(places.length);
 	let totalDays = $derived(days.length);
 	let accommodations = $derived(data.accommodations);
+	let totalBudget = $derived(places.reduce((sum: number, p: { estimated_cost: number }) => sum + (p.estimated_cost || 0), 0));
 
 	let activeAccommodation = $derived(() => {
 		if (!activeDay) return null;
@@ -188,6 +192,24 @@
 			place: 'bg-primary/10 text-primary',
 		};
 		return map[cat] || map.place;
+	}
+
+	function getWeatherIcon(code: number) {
+		// WMO Weather interpretation codes
+		if (code === 0) return '☀️';
+		if (code <= 3) return '⛅';
+		if (code <= 48) return '🌫️';
+		if (code <= 57) return '🌧️';
+		if (code <= 67) return '🌧️';
+		if (code <= 77) return '❄️';
+		if (code <= 82) return '🌧️';
+		if (code <= 86) return '❄️';
+		if (code <= 99) return '⛈️';
+		return '🌤️';
+	}
+
+	function getWeatherForDate(date: string) {
+		return weather.find(w => w.date === date);
 	}
 
 	async function removePlace(placeId: string) {
@@ -471,6 +493,12 @@
 			<span><span class="font-semibold">{accommodations.length}</span> {accommodations.length === 1 ? 'alojamiento' : 'alojamientos'}</span>
 		</div>
 	{/if}
+	{#if totalBudget > 0}
+		<div class="flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs sm:gap-2 sm:px-3 sm:text-sm">
+			<WalletIcon class="size-3 text-primary sm:size-4" />
+			<span><span class="font-semibold">{totalBudget.toFixed(0)}€</span> estimado</span>
+		</div>
+	{/if}
 </div>
 
 <!-- DAY TABS -->
@@ -478,6 +506,7 @@
 	<div class="flex gap-2 px-3 pb-2 sm:px-4">
 		{#each days as day, i (day.id)}
 			{@const dayPlaces = getPlacesForDay(day.id)}
+			{@const dayWeather = getWeatherForDate(day.date)}
 			<button
 				onclick={() => (activeDayIndex = i)}
 				class="shrink-0 rounded-lg border px-4 py-2.5 text-sm transition-all min-h-11 {activeDayIndex === i
@@ -488,6 +517,12 @@
 				<div class="font-medium">{formatDateShort(day.date)}</div>
 				{#if dayPlaces.length > 0}
 					<div class="mt-0.5 text-xs opacity-60">{dayPlaces.length} {dayPlaces.length === 1 ? 'lugar' : 'lugares'}</div>
+				{/if}
+				{#if dayWeather}
+					<div class="mt-0.5 flex items-center gap-1 text-xs opacity-80">
+						<span>{getWeatherIcon(dayWeather.weatherCode)}</span>
+						<span>{dayWeather.tempMin}°/{dayWeather.tempMax}°</span>
+					</div>
 				{/if}
 			</button>
 		{/each}
@@ -611,6 +646,13 @@
 
 							<!-- Actions -->
 							<div class="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 sm:top-3 sm:right-3" onclick={(e) => e.stopPropagation()}>
+								<button
+									onclick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`, '_blank')}
+									class="rounded-md bg-black/50 p-1.5 text-white backdrop-blur hover:bg-blue-500/70"
+									title="Abrir en Google Maps"
+								>
+									<ExternalLinkIcon class="size-4" />
+								</button>
 								<button
 									onclick={() => { editingPlace = place; showPlaceModal = true; }}
 									class="rounded-md bg-black/50 p-1.5 text-white backdrop-blur hover:bg-black/70"
@@ -802,6 +844,13 @@
 											{getCategoryLabel(place.category)}
 										</span>
 									{/if}
+									<button
+										onclick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`, '_blank')}
+										class="ml-auto rounded p-1 text-muted-foreground hover:text-foreground"
+										title="Abrir en Google Maps"
+									>
+										<ExternalLinkIcon class="size-3.5" />
+									</button>
 								</div>
 								<h3 class="mt-1 font-medium">{place.name}</h3>
 								{#if place.address}

@@ -37,7 +37,38 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.eq('trip_id', trip.id)
 		.order('start_date');
 
-	return { trip, days: days ?? [], places: places ?? [], accommodations: accommodations ?? [] };
+	// Get coordinates for weather (first place or first accommodation)
+	const firstPlace = (places ?? [])[0];
+	const firstAcc = (accommodations ?? [])[0];
+	const lat = firstPlace?.lat ?? firstAcc?.lat;
+	const lng = firstPlace?.lng ?? firstAcc?.lng;
+
+	let weather: { date: string; tempMax: number; tempMin: number; weatherCode: number }[] = [];
+	if (lat && lng && days && days.length > 0) {
+		try {
+			const startDate = days[0].date;
+			const endDate = days[days.length - 1].date;
+			const res = await fetch(
+				`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+				`&daily=temperature_2m_max,temperature_2m_min,weathercode` +
+				`&start_date=${startDate}&end_date=${endDate}` +
+				`&timezone=auto`
+			);
+			if (res.ok) {
+				const data = await res.json();
+				weather = data.daily.time.map((date: string, i: number) => ({
+					date,
+					tempMax: Math.round(data.daily.temperature_2m_max[i]),
+					tempMin: Math.round(data.daily.temperature_2m_min[i]),
+					weatherCode: data.daily.weathercode[i],
+				}));
+			}
+		} catch {
+			// Silently fail - weather is optional
+		}
+	}
+
+	return { trip, days: days ?? [], places: places ?? [], accommodations: accommodations ?? [], weather };
 };
 
 export const actions: Actions = {
@@ -112,6 +143,7 @@ export const actions: Actions = {
 			origin: (form.get('origin') as string) || null,
 			destination: (form.get('destination') as string) || null,
 			arrival_time: (form.get('arrival_time') as string) || null,
+			estimated_cost: form.has('estimated_cost') ? parseFloat(form.get('estimated_cost') as string) || 0 : 0,
 		});
 
 		if (err) return fail(500, { error: err.message });
@@ -158,6 +190,7 @@ export const actions: Actions = {
 		if (form.has('plus_code')) updates.plus_code = (form.get('plus_code') as string) || null;
 		if (form.has('photo_url')) updates.photo_url = (form.get('photo_url') as string) || null;
 		if (form.has('rating')) updates.rating = form.get('rating') ? parseFloat(form.get('rating') as string) : null;
+		if (form.has('estimated_cost')) updates.estimated_cost = parseFloat(form.get('estimated_cost') as string) || 0;
 
 		const ticketFile = form.get('ticket_file') as File | null;
 		if (ticketFile && ticketFile.size > 0) {

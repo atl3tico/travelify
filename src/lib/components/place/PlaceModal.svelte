@@ -31,6 +31,7 @@
 		origin?: string | null;
 		destination?: string | null;
 		arrival_time?: string | null;
+		estimated_cost?: number | null;
 	}
 
 	let {
@@ -74,6 +75,7 @@
 	let description = $state(place?.description ?? '');
 	let startTime = $state(place?.start_time?.substring(0, 5) ?? '');
 	let category = $state(place?.category ?? 'place');
+	let estimatedCost = $state(place?.estimated_cost ?? 0);
 	let ticketFile: File | null = $state(null);
 	let ticketUrl = $state(place?.ticket_url ?? '');
 	let error = $state('');
@@ -279,6 +281,7 @@
 			form.set('description', description);
 			form.set('start_time', startTime);
 			form.set('category', category);
+			form.set('estimated_cost', estimatedCost.toString());
 			if (selectedDayId !== place.day_id) form.set('day_id', selectedDayId);
 			if (ticketFile) form.set('ticket_file', ticketFile);
 			if (selectedDetails) {
@@ -321,6 +324,7 @@
 			form.set('description', description);
 			form.set('start_time', startTime);
 			form.set('category', category);
+			form.set('estimated_cost', estimatedCost.toString());
 			if (selectedDetails.photo_url) form.set('photo_url', selectedDetails.photo_url);
 			if (selectedDetails.description) form.set('description', selectedDetails.description);
 			if (selectedDetails.rating) form.set('rating', selectedDetails.rating.toString());
@@ -549,6 +553,18 @@
 							class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
 						/>
 					</div>
+				</div>
+
+				<div class="space-y-1">
+					<label class="text-sm font-medium">Coste estimado (€)</label>
+					<input
+						type="number"
+						bind:value={estimatedCost}
+						min="0"
+						step="5"
+						placeholder="0"
+						class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					/>
 				</div>
 
 				<div class="space-y-1">

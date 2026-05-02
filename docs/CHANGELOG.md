@@ -9,6 +9,19 @@
   - **Algoritmo**: K-means en lat/lng → balanceo moviendo items de clusters sobrecargados a subcargados → ordena por `order_index` dentro de cada cluster
   - **Files**: `src/routes/(app)/trips/[id]/+page.server.ts`, `src/routes/(app)/trips/[id]/+page.svelte`
 
+- [x] Botón "Abrir en Google Maps" en cada actividad
+  - **Qué hace**: Abre Google Maps con las coordenadas del lugar en una nueva pestaña
+  - **Files**: `src/routes/(app)/trips/[id]/+page.svelte`
+
+- [x] Clima por día en las pestañas de días
+  - **Qué hace**: Muestra icono del clima y temperatura mín/máx para cada día del viaje usando Open-Meteo API (gratis, sin API key)
+  - **Files**: `src/routes/(app)/trips/[id]/+page.server.ts`, `src/routes/(app)/trips/[id]/+page.svelte`, `src/routes/api/weather/+server.ts`
+
+- [x] Presupuesto estimado del viaje
+  - **Qué hace**: Campo `estimated_cost` en cada actividad, total mostrado en la barra de stats. Input en el modal de actividad.
+  - **Migration**: `supabase/migrations/007_add_estimated_cost.sql` (needs manual run)
+  - **Files**: `src/routes/(app)/trips/[id]/+page.server.ts`, `src/routes/(app)/trips/[id]/+page.svelte`, `src/lib/components/place/PlaceModal.svelte`
+
 ### Bugs
 
 - [x] `api/place-info` retorna 200 con campo descripción vacío
