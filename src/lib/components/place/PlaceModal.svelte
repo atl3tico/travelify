@@ -262,7 +262,7 @@
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={onClose}>
 	<div
-		class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-background shadow-2xl"
+		class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background shadow-2xl"
 		onclick={(e) => e.stopPropagation()}
 	>
 		<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-5 py-4">
@@ -272,7 +272,7 @@
 			</button>
 		</div>
 
-		<div class="space-y-4 p-5">
+		<div class="space-y-4 p-5 pb-8">
 			{#if error}
 				<div class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
 			{/if}
@@ -321,7 +321,7 @@
 								<LoaderIcon class="absolute right-3 top-2.5 size-4 animate-spin text-muted-foreground" />
 							{/if}
 							{#if searchResults.length > 0}
-								<ul class="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg">
+								<ul class="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
 									{#each searchResults as r (r.place_id)}
 										<li>
 											<button

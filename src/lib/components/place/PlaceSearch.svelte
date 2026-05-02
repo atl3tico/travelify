@@ -183,7 +183,7 @@
 			{/if}
 		</div>
 		{#if results.length > 0}
-			<ul class="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg">
+			<ul class="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
 				{#each results as r (r.place_id)}
 					<li>
 						<button
