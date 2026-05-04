@@ -31,9 +31,9 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Travelify</title>
+	<title>TRAVELy</title>
 	<meta name="description" content="Planifica tus viajes con mapas interactivos, itinerarios día a día y optimización de rutas." />
-	<meta property="og:title" content="Travelify — Planificador de viajes" />
+	<meta property="og:title" content="TRAVELy — Planificador de viajes" />
 	<meta property="og:description" content="Planifica tus viajes con mapas interactivos, itinerarios día a día y optimización de rutas." />
 	<meta property="og:type" content="website" />
 	<meta name="theme-color" content="#09090b" />
@@ -46,7 +46,7 @@
 		<header class="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 			<div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
 				<a href="/dashboard" class="flex items-center gap-2">
-					<img src={logo} alt="Travelify" class="h-7 w-auto" />
+					<img src={logo} alt="TRAVELy" class="h-7 w-auto" />
 				</a>
 
 				<div class="hidden items-center gap-2 sm:flex">

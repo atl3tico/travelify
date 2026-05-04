@@ -12,5 +12,5 @@
     <circle cx="22" cy="22" r="3" fill="url(#logoGrad)"/>
   </g>
   <!-- Text -->
-  <text x="62" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="url(#logoGrad)">Travelify</text>
+  <text x="62" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="url(#logoGrad)">TRAVELy</text>
 </svg>

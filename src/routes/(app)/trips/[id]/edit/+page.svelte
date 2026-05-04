@@ -127,7 +127,7 @@
 </script>
 
 <svelte:head>
-	<title>Editar {data.trip.name} — Travelify</title>
+	<title>Editar {data.trip.name} — TRAVELy</title>
 </svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">

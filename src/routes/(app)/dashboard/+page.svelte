@@ -37,7 +37,7 @@
 </script>
 
 <svelte:head>
-	<title>Mis viajes — Travelify</title>
+	<title>Mis viajes — TRAVELy</title>
 </svelte:head>
 
 <div class="space-y-8">

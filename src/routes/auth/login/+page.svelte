@@ -44,15 +44,15 @@
 </script>
 
 <svelte:head>
-	<title>Iniciar sesión — Travelify</title>
+	<title>Iniciar sesión — TRAVELy</title>
 </svelte:head>
 
 <div class="flex min-h-[80vh] items-center justify-center">
 	<div class="w-full max-w-sm space-y-6">
 		<div class="text-center">
-			<img src={logo} alt="Travelify" class="mx-auto mb-3 h-8 w-auto" />
+			<img src={logo} alt="TRAVELy" class="mx-auto mb-3 h-8 w-auto" />
 			<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Iniciar sesión</h1>
-			<p class="mt-1 text-sm text-muted-foreground">Bienvenido de vuelta a Travelify</p>
+			<p class="mt-1 text-sm text-muted-foreground">Bienvenido de vuelta a TRAVELy</p>
 		</div>
 
 		{#if error}

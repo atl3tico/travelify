@@ -463,7 +463,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 </script>
 
 <svelte:head>
-	<title>{data.trip.name} — Travelify</title>
+	<title>{data.trip.name} — TRAVELy</title>
 	<meta name="description" content="Planifica tu viaje a {data.trip.destination} con itinerario día a día y mapas de ruta." />
 </svelte:head>
 

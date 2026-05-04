@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-	<title>Nuevo viaje — Travelify</title>
+	<title>Nuevo viaje — TRAVELy</title>
 </svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">
