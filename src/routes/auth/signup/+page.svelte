@@ -2,7 +2,6 @@
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/button';
-	import logo from '$lib/assets/logo.jpg';
 	import MailIcon from '@lucide/svelte/icons/mail';
 
 	let email = $state('');
@@ -63,9 +62,8 @@
 			</div>
 		{:else}
 			<div class="text-center">
-				<img src={logo} alt="TRAVELy" class="mx-auto mb-4 h-24 w-auto drop-shadow-md" />
-				<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Crear cuenta</h1>
-				<p class="mt-1 text-sm text-muted-foreground">Empieza a planificar tus viajes</p>
+			<h1 class="mb-2 font-serif text-3xl italic tracking-tight">TRAVELy</h1>
+			<p class="text-sm text-muted-foreground">Crea tu cuenta para empezar</p>
 			</div>
 
 			{#if error}

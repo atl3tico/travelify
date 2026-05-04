@@ -2,7 +2,6 @@
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/button';
-	import logo from '$lib/assets/logo.jpg';
 
 	let email = $state('');
 	let password = $state('');
@@ -50,9 +49,8 @@
 <div class="flex min-h-[80vh] items-center justify-center">
 	<div class="w-full max-w-sm space-y-6">
 		<div class="text-center">
-			<img src={logo} alt="TRAVELy" class="mx-auto mb-4 h-24 w-auto drop-shadow-md" />
-			<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Iniciar sesión</h1>
-			<p class="mt-1 text-sm text-muted-foreground">Bienvenido de vuelta a TRAVELy</p>
+			<h1 class="mb-2 font-serif text-3xl italic tracking-tight">TRAVELy</h1>
+			<p class="text-sm text-muted-foreground">Inicia sesión en tu cuenta</p>
 		</div>
 
 		{#if error}

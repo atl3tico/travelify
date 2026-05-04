@@ -1,6 +1,5 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
-	import logo from '$lib/assets/logo.jpg';
 	import '../app.css';
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { goto } from '$app/navigation';
@@ -41,8 +40,7 @@
 			<div class="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:h-16 sm:gap-4">
 				<!-- Logo -->
 				<a href="/dashboard" class="flex shrink-0 items-center gap-3">
-					<img src={logo} alt="TRAVELy" class="h-9 w-auto sm:h-12" />
-					<span class="font-serif text-base italic tracking-tight sm:text-lg">TRAVELy</span>
+					<span class="font-serif text-lg italic tracking-tight sm:text-xl">TRAVELy</span>
 				</a>
 
 				<!-- Spacer -->
