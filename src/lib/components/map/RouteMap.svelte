@@ -174,62 +174,74 @@
 		clearMapObjects();
 		const hasAccomm = aLat !== null && aLng !== null;
 
-		const waypoints = s.map((p) => ({
+		const allWaypoints = s.map((p) => ({
 			location: { lat: p.lat, lng: p.lng },
 			stopover: true,
 		}));
 
-		const origin = hasAccomm
-			? { lat: aLat!, lng: aLng! }
-			: waypoints[0].location;
-		const destination = hasAccomm
-			? { lat: aLat!, lng: aLng! }
-			: waypoints[waypoints.length - 1].location;
-		const dirWaypoints = hasAccomm ? waypoints : waypoints.slice(1, -1);
+		const MAX_WAYPOINTS = 25;
+
+		addMarkers(s, hasAccomm, aLat!, aLng!);
+
+		const { DirectionsService } = await importLibrary('routes');
+		let allPathPoints: google.maps.LatLng[] = [];
+		let totalDist = 0;
+		let totalDur = 0;
+
+		// Build ordered list of all stop points (accommodation + places)
+		const orderedStops: { lat: number; lng: number }[] = [];
+		if (hasAccomm) orderedStops.push({ lat: aLat!, lng: aLng! });
+		for (const p of s) orderedStops.push({ lat: p.lat, lng: p.lng });
+		if (hasAccomm) orderedStops.push({ lat: aLat!, lng: aLng! });
 
 		try {
-			const { DirectionsService } = await importLibrary('routes');
-			const ds = new DirectionsService();
-			const result = await ds.route({
-				origin,
-				destination,
-				waypoints: dirWaypoints,
-				travelMode: googleTravelMode[travelMode] as google.maps.TravelMode,
-				optimizeWaypoints: false,
-			});
+			// Split into segments of up to 25 waypoints each
+			for (let start = 0; start < orderedStops.length - 1; start += MAX_WAYPOINTS) {
+				const segmentEnd = Math.min(start + MAX_WAYPOINTS + 1, orderedStops.length - 1);
+				if (segmentEnd <= start + 1) break;
 
-			const route = result.routes[0];
-			const pathPoints: google.maps.LatLng[] = [];
-			for (const leg of route.legs) {
-				for (const step of leg.steps) {
-					const decoded = step.polyline?.points
-						? google.maps.geometry?.encoding?.decodePath(step.polyline.points)
-						: null;
-					if (decoded) {
-						pathPoints.push(...decoded);
-					} else {
-						pathPoints.push(new google.maps.LatLng(step.start_location.lat(), step.start_location.lng()));
-						pathPoints.push(new google.maps.LatLng(step.end_location.lat(), step.end_location.lng()));
+				const origin = orderedStops[start];
+				const destination = orderedStops[segmentEnd];
+				const segWaypoints = orderedStops.slice(start + 1, segmentEnd).map((p) => ({
+					location: { lat: p.lat, lng: p.lng },
+					stopover: true,
+				}));
+
+				const ds = new DirectionsService();
+				const result = await ds.route({
+					origin,
+					destination,
+					waypoints: segWaypoints,
+					travelMode: googleTravelMode[travelMode] as google.maps.TravelMode,
+					optimizeWaypoints: false,
+				});
+
+				const route = result.routes[0];
+				for (const leg of route.legs) {
+					if (leg.distance) totalDist += leg.distance.value;
+					if (leg.duration) totalDur += leg.duration.value;
+					for (const step of leg.steps) {
+						const decoded = step.polyline?.points
+							? google.maps.geometry?.encoding?.decodePath(step.polyline.points)
+							: null;
+						if (decoded) {
+							allPathPoints.push(...decoded);
+						} else {
+							allPathPoints.push(new google.maps.LatLng(step.start_location.lat(), step.start_location.lng()));
+							allPathPoints.push(new google.maps.LatLng(step.end_location.lat(), step.end_location.lng()));
+						}
 					}
 				}
 			}
 
 			polyline = new google.maps.Polyline({
 				map,
-				path: pathPoints,
+				path: allPathPoints,
 				strokeColor: '#18181b',
 				strokeWeight: 4,
 				strokeOpacity: 0.8,
 			});
 
-			addMarkers(s, hasAccomm, aLat!, aLng!);
-
-			let totalDist = 0;
-			let totalDur = 0;
-			for (const leg of route.legs) {
-				if (leg.distance) totalDist += leg.distance.value;
-				if (leg.duration) totalDur += leg.duration.value;
-			}
 			routeInfo = {
 				distance: totalDist >= 1000 ? (totalDist / 1000).toFixed(1) + ' km' : totalDist + ' m',
 				duration:
@@ -238,9 +250,9 @@
 						: Math.round(totalDur / 60) + ' min',
 			};
 
-			const o = `${origin.lat},${origin.lng}`;
-			const d = `${destination.lat},${destination.lng}`;
-			const wp = dirWaypoints.map((w) => `${w.location.lat},${w.location.lng}`).join('|');
+			const o = `${orderedStops[0].lat},${orderedStops[0].lng}`;
+			const d = `${orderedStops[orderedStops.length - 1].lat},${orderedStops[orderedStops.length - 1].lng}`;
+			const wp = orderedStops.slice(1, -1).map((p) => `${p.lat},${p.lng}`).join('|');
 			googleMapsLink = `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&waypoints=${wp}&travelmode=${travelMode}`;
 		} catch {
 			routeInfo = null;
