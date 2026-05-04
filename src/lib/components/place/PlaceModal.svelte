@@ -18,6 +18,7 @@
 		description?: string;
 		visit_duration: number;
 		category: string;
+		meal_type?: string | null;
 		start_time?: string | null;
 		ticket_url?: string | null;
 		photo_url?: string | null;
@@ -50,9 +51,12 @@
 		onSaved: () => void;
 	} = $props();
 
+	// svelte-ignore state_referenced_locally
+	let snap = $state.snapshot({ place, dayId });
+
 	let isEdit = $derived(place !== null);
 	let loading = $state(false);
-	let selectedDayId = $state(place?.day_id ?? dayId);
+	let selectedDayId = $state(snap.place?.day_id ?? snap.dayId);
 
 	let selectedDetails: {
 		name: string;
@@ -69,15 +73,16 @@
 		description?: string;
 	} | null = $state(null);
 
-	let name = $state(place?.name ?? '');
-	let visitDuration = $state(place?.visit_duration ?? 60);
-	let notes = $state(place?.notes ?? '');
-	let description = $state(place?.description ?? '');
-	let startTime = $state(place?.start_time?.substring(0, 5) ?? '');
-	let category = $state(place?.category ?? 'place');
-	let estimatedCost = $state(place?.estimated_cost ?? 0);
+	let name = $state(snap.place?.name ?? '');
+	let visitDuration = $state(snap.place?.visit_duration ?? 60);
+	let notes = $state(snap.place?.notes ?? '');
+	let description = $state(snap.place?.description ?? '');
+	let startTime = $state(snap.place?.start_time?.substring(0, 5) ?? '');
+	let category = $state(snap.place?.category ?? 'place');
+	let estimatedCost = $state(snap.place?.estimated_cost ?? 0);
+	let mealType = $state(snap.place?.meal_type ?? '');
 	let ticketFile: File | null = $state(null);
-	let ticketUrl = $state(place?.ticket_url ?? '');
+	let ticketUrl = $state(snap.place?.ticket_url ?? '');
 	let error = $state('');
 	let changingPlace = $state(false);
 
@@ -170,6 +175,12 @@
 		{ value: 'transport', label: 'Transporte' },
 	];
 
+	const mealTypes = [
+		{ value: 'breakfast', label: 'Desayuno', icon: '🍳' },
+		{ value: 'lunch', label: 'Comida', icon: '🍽️' },
+		{ value: 'dinner', label: 'Cena', icon: '🌙' },
+	];
+
 	function formatDateShort(dateStr: string) {
 		const d = new Date(dateStr + 'T12:00:00');
 		return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -179,6 +190,7 @@
 		selectedDetails = details;
 		name = details.name;
 		category = details.category;
+		mealType = '';
 		visitDuration = categoryDurations[category] || 60;
 		await autofillDetails();
 	}
@@ -243,6 +255,7 @@
 				};
 				name = selectedDetails.name;
 				category = selectedDetails.category;
+				mealType = '';
 				if (editorialSummary && !description) {
 					description = editorialSummary;
 				}
@@ -282,6 +295,7 @@
 			form.set('start_time', startTime);
 			form.set('category', category);
 			form.set('estimated_cost', estimatedCost.toString());
+			form.set('meal_type', mealType);
 			if (selectedDayId !== place.day_id) form.set('day_id', selectedDayId);
 			if (ticketFile) form.set('ticket_file', ticketFile);
 			if (selectedDetails) {
@@ -325,6 +339,7 @@
 			form.set('start_time', startTime);
 			form.set('category', category);
 			form.set('estimated_cost', estimatedCost.toString());
+			form.set('meal_type', mealType);
 			if (selectedDetails.photo_url) form.set('photo_url', selectedDetails.photo_url);
 			if (selectedDetails.description) form.set('description', selectedDetails.description);
 			if (selectedDetails.rating) form.set('rating', selectedDetails.rating.toString());
@@ -351,9 +366,21 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={onClose}>
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+	role="button"
+	tabindex="-1"
+	aria-label="Close modal"
+	onkeydown={(e) => e.key === 'Escape' && onClose()}
+	onclick={onClose}
+>
 	<div
 		class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background shadow-2xl"
+		role="dialog"
+		aria-modal="true"
+		aria-label={isEdit ? 'Edit place' : 'New place'}
+		tabindex="-1"
+		onkeydown={(e) => e.stopPropagation()}
 		onclick={(e) => e.stopPropagation()}
 	>
 		<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-5 py-4">
@@ -370,8 +397,9 @@
 
 			{#if isEdit}
 				<div class="space-y-1">
-					<label class="text-sm font-medium">Nombre</label>
+					<label for="place-name" class="text-sm font-medium">Nombre</label>
 					<input
+						id="place-name"
 						type="text"
 						bind:value={name}
 						class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -515,12 +543,12 @@
 				</div>
 
 				<div class="space-y-1">
-					<label class="text-sm font-medium">Categoría</label>
+					<span class="text-sm font-medium">Categoría</span>
 					<div class="flex flex-wrap gap-2">
 						{#each categories as cat (cat.value)}
 							<button
 								type="button"
-								onclick={() => (category = cat.value)}
+								onclick={() => { category = cat.value; if (cat.value !== 'restaurant') mealType = ''; }}
 								class="rounded-full border px-3 py-1 text-xs transition-colors {category === cat.value
 									? 'border-primary bg-primary text-primary-foreground'
 									: 'border-border hover:border-primary/30'}"
@@ -530,6 +558,25 @@
 						{/each}
 					</div>
 				</div>
+
+				{#if category === 'restaurant'}
+					<div class="space-y-1">
+						<span class="text-sm font-medium">Tipo de comida</span>
+						<div class="flex flex-wrap gap-2">
+							{#each mealTypes as mt (mt.value)}
+								<button
+									type="button"
+									onclick={() => (mealType = mealType === mt.value ? '' : mt.value)}
+									class="rounded-full border px-3 py-1 text-xs transition-colors {mealType === mt.value
+										? 'border-primary bg-primary text-primary-foreground'
+										: 'border-border hover:border-primary/30'}"
+								>
+									{mt.icon} {mt.label}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{/if}
 
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<div class="space-y-1">
@@ -544,8 +591,9 @@
 						/>
 					</div>
 					<div class="space-y-1">
-						<label class="text-sm font-medium">Duración (min)</label>
+						<label for="place-duration" class="text-sm font-medium">Duración (min)</label>
 						<input
+							id="place-duration"
 							type="number"
 							bind:value={visitDuration}
 							min="15"
@@ -556,8 +604,9 @@
 				</div>
 
 				<div class="space-y-1">
-					<label class="text-sm font-medium">Coste estimado (€)</label>
+					<label for="place-cost" class="text-sm font-medium">Coste estimado (€)</label>
 					<input
+						id="place-cost"
 						type="number"
 						bind:value={estimatedCost}
 						min="0"
@@ -569,7 +618,7 @@
 
 				<div class="space-y-1">
 					<div class="flex items-center justify-between">
-						<label class="text-sm font-medium">Descripción</label>
+						<label for="place-description" class="text-sm font-medium">Descripción</label>
 						<button
 							type="button"
 							onclick={autofillDetails}
@@ -585,6 +634,7 @@
 						</button>
 					</div>
 					<textarea
+						id="place-description"
 						bind:value={description}
 						rows="2"
 						placeholder="Notas sobre la actividad..."
@@ -593,8 +643,9 @@
 				</div>
 
 				<div class="space-y-1">
-					<label class="text-sm font-medium">Notas rápidas</label>
+					<label for="place-notes" class="text-sm font-medium">Notas rápidas</label>
 					<input
+						id="place-notes"
 						type="text"
 						bind:value={notes}
 						placeholder="Notas breves..."

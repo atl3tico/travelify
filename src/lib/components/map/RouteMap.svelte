@@ -39,7 +39,8 @@
 	let gMarkers: google.maps.Marker[] = [];
 	let routeInfo: { distance: string; duration: string } | null = $state(null);
 	let googleMapsLink = $state('');
-	let travelMode: TravelMode = $state(initialMode);
+	// svelte-ignore state_referenced_locally
+	let travelMode: TravelMode = $state($state.snapshot(initialMode));
 	let shareCopied = $state(false);
 	let isZoomed = $state(false);
 	let includeAccommodation = $state(false);

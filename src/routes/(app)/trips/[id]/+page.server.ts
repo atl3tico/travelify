@@ -88,7 +88,6 @@ export const actions: Actions = {
 		const lng = parseFloat(form.get('lng') as string);
 		const address = (form.get('address') as string) || null;
 		const googlePlaceId = (form.get('google_place_id') as string) || null;
-		const plusCode = (form.get('plus_code') as string) || null;
 		const visitDuration = parseInt(form.get('visit_duration') as string) || 60;
 		const notes = (form.get('notes') as string) || '';
 		const photoUrl = (form.get('photo_url') as string) || null;
@@ -131,7 +130,6 @@ export const actions: Actions = {
 			lng,
 			address,
 			google_place_id: googlePlaceId,
-			plus_code: plusCode,
 			visit_duration: visitDuration,
 			notes,
 			order_index: nextIndex,
@@ -149,9 +147,11 @@ export const actions: Actions = {
 			destination: (form.get('destination') as string) || null,
 			arrival_time: (form.get('arrival_time') as string) || null,
 			estimated_cost: form.has('estimated_cost') ? parseFloat(form.get('estimated_cost') as string) || 0 : 0,
+			meal_type: (form.get('meal_type') as string) || null,
 		});
 
 		if (err) return fail(500, { error: err.message });
+		return { success: true };
 	},
 
 	updatePlace: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -196,6 +196,7 @@ export const actions: Actions = {
 		if (form.has('photo_url')) updates.photo_url = (form.get('photo_url') as string) || null;
 		if (form.has('rating')) updates.rating = form.get('rating') ? parseFloat(form.get('rating') as string) : null;
 		if (form.has('estimated_cost')) updates.estimated_cost = parseFloat(form.get('estimated_cost') as string) || 0;
+		if (form.has('meal_type')) updates.meal_type = (form.get('meal_type') as string) || null;
 
 		const ticketFile = form.get('ticket_file') as File | null;
 		if (ticketFile && ticketFile.size > 0) {

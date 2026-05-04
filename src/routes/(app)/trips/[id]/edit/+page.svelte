@@ -10,21 +10,23 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 
 	let { data } = $props();
+	// svelte-ignore state_referenced_locally
+	let snap = $state.snapshot(data);
 
-	let name = $state(data.trip.name);
-	let destination = $state(data.trip.destination);
-	let startDate = $state(data.trip.start_date);
-	let endDate = $state(data.trip.end_date);
-	let travelers = $state(data.trip.num_travelers || 1);
-	let description = $state(data.trip.description || '');
+	let name = $state(snap.trip.name);
+	let destination = $state(snap.trip.destination);
+	let startDate = $state(snap.trip.start_date);
+	let endDate = $state(snap.trip.end_date);
+	let travelers = $state(snap.trip.num_travelers || 1);
+	let description = $state(snap.trip.description || '');
 	let error = $state('');
 	let loading = $state(false);
 
-	let accommodations = $state(data.accommodations);
+	let accommodations = $state(snap.accommodations);
 	let showAddAcc = $state(false);
 	let newAccName = $state('');
-	let newAccStart = $state(data.trip.start_date);
-	let newAccEnd = $state(data.trip.end_date);
+	let newAccStart = $state(snap.trip.start_date);
+	let newAccEnd = $state(snap.trip.end_date);
 	let editingAccId = $state<string | null>(null);
 	let editAccName = $state('');
 	let editAccStart = $state('');
@@ -308,8 +310,9 @@
 							</div>
 							<div class="grid grid-cols-2 gap-3">
 								<div class="space-y-1">
-									<label class="text-xs font-medium text-muted-foreground">Check-in</label>
+									<label class="text-xs font-medium text-muted-foreground" for="acc-checkin">Check-in</label>
 									<input
+										id="acc-checkin"
 										type="date"
 										bind:value={editAccStart}
 										required
@@ -317,8 +320,9 @@
 									/>
 								</div>
 								<div class="space-y-1">
-									<label class="text-xs font-medium text-muted-foreground">Check-out</label>
+									<label class="text-xs font-medium text-muted-foreground" for="acc-checkout">Check-out</label>
 									<input
+										id="acc-checkout"
 										type="date"
 										bind:value={editAccEnd}
 										required

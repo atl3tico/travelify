@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-03
+
+### Features
+
+- [x] Asignación de comidas del día (desayuno/comida/cena) a restaurantes
+  - **Qué hace**: Al marcar un restaurante como desayuno/comida/cena, se muestra:
+    - Badge con icono (🍳/🍽️/🌙) y etiqueta en la card de la actividad
+    - Indicadores de comida en las tabs de días (asignados a color, no asignados en gris)
+    - Selector de tipo de comida en el modal de añadir/editar (solo visible con categoría "Restaurante")
+  - **Migration**: `supabase/migrations/009_add_meal_type.sql` ✅ applied
+  - **Files**: `src/routes/(app)/trips/[id]/+page.server.ts`, `src/routes/(app)/trips/[id]/+page.svelte`, `src/lib/components/place/PlaceModal.svelte`
+
+### Data
+
+- [x] Añadida **Boulangerie des Huats** como desayuno en días 6 y 7 (Paris trip)
+- [x] Añadidos **Le Totem**, **Brasserie De Paris**, **Deal'M** como desayuno en días 2, 3 y 4 (Paris trip)
+
 ## 2026-05-02
 
 ### Features

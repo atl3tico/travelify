@@ -184,6 +184,33 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			.sort((a: { order_index: number }, b: { order_index: number }) => a.order_index - b.order_index);
 	}
 
+	const mealIcons: Record<string, string> = {
+		breakfast: '🍳',
+		lunch: '🍽️',
+		dinner: '🌙',
+	};
+
+	const mealLabels: Record<string, string> = {
+		breakfast: 'Desayuno',
+		lunch: 'Comida',
+		dinner: 'Cena',
+	};
+
+	const mealColors: Record<string, string> = {
+		breakfast: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
+		lunch: 'bg-green-500/10 text-green-700 dark:text-green-400',
+		dinner: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
+	};
+
+	function getDayMeals(dayId: string) {
+		const mealSet = new Set(
+			places
+				.filter((p: { day_id: string; meal_type?: string | null }) => p.day_id === dayId && p.meal_type)
+				.map((p: { meal_type?: string | null }) => p.meal_type!)
+		);
+		return ['breakfast', 'lunch', 'dinner'].filter((m) => mealSet.has(m));
+	}
+
 	function getCategoryLabel(cat: string) {
 		const map: Record<string, string> = {
 			restaurant: 'Restaurante',
@@ -514,6 +541,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 		{#each days as day, i (day.id)}
 			{@const dayPlaces = getPlacesForDay(day.id)}
 			{@const dayWeather = getWeatherForDate(day.date)}
+			{@const meals = getDayMeals(day.id)}
 			<button
 				onclick={() => (activeDayIndex = i)}
 				class="shrink-0 rounded-lg border px-4 py-2.5 text-sm transition-all min-h-11 {activeDayIndex === i
@@ -529,6 +557,13 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 					<div class="mt-0.5 flex items-center gap-1 text-xs opacity-80">
 						<span>{getWeatherIcon(dayWeather.weatherCode)}</span>
 						<span>{dayWeather.tempMin}°/{dayWeather.tempMax}°</span>
+					</div>
+				{/if}
+				{#if meals.length > 0}
+					<div class="mt-1 flex items-center gap-1">
+						{#each ['breakfast', 'lunch', 'dinner'] as m}
+							<span class="text-sm {meals.includes(m) ? 'opacity-100' : 'opacity-15 grayscale'}" title="{mealLabels[m]}">{mealIcons[m]}</span>
+						{/each}
 					</div>
 				{/if}
 			</button>
@@ -666,6 +701,9 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 								: zoomPlaceId === place.id
 									? 'border-primary'
 									: 'border-border'}"
+						role="option"
+						aria-selected={zoomPlaceId === place.id}
+						tabindex="0"
 						draggable="true"
 						ondragstart={() => { dragIndex = index; dragOverIndex = null; }}
 						ondragover={(e) => { e.preventDefault(); dragOverIndex = index; }}
@@ -673,7 +711,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 						ondrop={() => handleReorder()}
 						ondragend={() => { dragIndex = null; dragOverIndex = null; }}
 						onclick={() => { zoomPlaceId = zoomPlaceId === place.id ? null : place.id; }}
-						role="listitem"
+						onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); zoomPlaceId = zoomPlaceId === place.id ? null : place.id; } } }
 					>
 						<!-- Background Image -->
 						<img
@@ -687,13 +725,19 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 
 						<!-- Letter Badge -->
 						<div class="absolute top-2 left-2 sm:top-3 sm:left-3">
-							<span class="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
+							<span class="flex size-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
 								{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[index]}
 							</span>
 						</div>
 
-							<!-- Actions -->
-							<div class="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:top-3 sm:right-3" onclick={(e) => e.stopPropagation()}>
+							<div
+								class="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:top-3 sm:right-3"
+								role="toolbar"
+								aria-label="Place actions"
+								tabindex="-1"
+								onkeydown={(e) => e.stopPropagation()}
+								onclick={(e) => e.stopPropagation()}
+							>
 								<button
 									onclick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`, '_blank')}
 									class="rounded-md bg-black/50 p-1.5 text-white backdrop-blur hover:bg-blue-500/70"
@@ -724,6 +768,11 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 									{#if place.category}
 										<span class="hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium sm:inline-block {getCategoryColor(place.category)}">
 											{getCategoryLabel(place.category)}
+										</span>
+									{/if}
+									{#if place.meal_type}
+										<span class="hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium sm:inline-block {mealColors[place.meal_type] || ''}">
+											{mealIcons[place.meal_type] || ''} {mealLabels[place.meal_type] || place.meal_type}
 										</span>
 									{/if}
 								</div>
@@ -834,8 +883,23 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 <!-- DAY MODAL -->
 {#if showDayModal && days[modalDayIndex]}
 	{@const modalDay = days[modalDayIndex]}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={() => (showDayModal = false)}>
-		<div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background shadow-2xl" onclick={(e) => e.stopPropagation()}>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="button"
+		tabindex="-1"
+		aria-label="Close day modal"
+		onkeydown={(e) => e.key === 'Escape' && (showDayModal = false)}
+		onclick={() => (showDayModal = false)}
+	>
+		<div
+			class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background shadow-2xl"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Day details"
+			tabindex="-1"
+			onkeydown={(e) => e.stopPropagation()}
+			onclick={(e) => e.stopPropagation()}
+		>
 			<!-- Modal header -->
 			<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background p-4">
 				<div class="flex items-center gap-3">
@@ -896,6 +960,11 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 									{#if place.category}
 										<span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium {getCategoryColor(place.category)}">
 											{getCategoryLabel(place.category)}
+										</span>
+									{/if}
+									{#if place.meal_type}
+										<span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium {mealColors[place.meal_type] || ''}">
+											{mealIcons[place.meal_type] || ''} {mealLabels[place.meal_type] || place.meal_type}
 										</span>
 									{/if}
 									<button
@@ -978,8 +1047,23 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 <div class="h-14 sm:h-16"></div>
 
 {#if showRedistributeModal}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={() => (showRedistributeModal = false)}>
-		<div class="w-full max-w-md overflow-y-auto rounded-2xl bg-background shadow-2xl" onclick={(e) => e.stopPropagation()}>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="button"
+		tabindex="-1"
+		aria-label="Close redistribute modal"
+		onkeydown={(e) => e.key === 'Escape' && (showRedistributeModal = false)}
+		onclick={() => (showRedistributeModal = false)}
+	>
+		<div
+			class="w-full max-w-md overflow-y-auto rounded-2xl bg-background shadow-2xl"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Redistribute activities"
+			tabindex="-1"
+			onkeydown={(e) => e.stopPropagation()}
+			onclick={(e) => e.stopPropagation()}
+		>
 			<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-5 py-4">
 				<h2 class="text-lg font-semibold">Redistribuir actividades</h2>
 				<button class="rounded-md p-1.5 hover:bg-accent" onclick={() => (showRedistributeModal = false)}>
@@ -1052,9 +1136,21 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 
 <!-- FLIGHT MODAL -->
 {#if showFlightModal}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={() => (showFlightModal = false)}>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="button"
+		tabindex="-1"
+		aria-label="Close flight modal"
+		onkeydown={(e) => e.key === 'Escape' && (showFlightModal = false)}
+		onclick={() => (showFlightModal = false)}
+	>
 		<div
 			class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-background shadow-2xl"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Flights"
+			tabindex="-1"
+			onkeydown={(e) => e.stopPropagation()}
 			onclick={(e) => e.stopPropagation()}
 		>
 			<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-5 py-4">
@@ -1082,32 +1178,32 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 					</div>
 					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Vuelo</label>
-							<input type="text" bind:value={flightFields.outbound_flight_number} placeholder="IB1234" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-outbound-flight">Vuelo</label>
+							<input id="fl-outbound-flight" type="text" bind:value={flightFields.outbound_flight_number} placeholder="IB1234" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Aerolínea</label>
-							<input type="text" bind:value={flightFields.outbound_airline} placeholder="Iberia" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
-						</div>
-					</div>
-					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Origen</label>
-							<input type="text" bind:value={flightFields.outbound_origin} placeholder="MAD" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
-						</div>
-						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Destino</label>
-							<input type="text" bind:value={flightFields.outbound_destination} placeholder="CDG" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-outbound-airline">Aerolínea</label>
+							<input id="fl-outbound-airline" type="text" bind:value={flightFields.outbound_airline} placeholder="Iberia" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 					</div>
 					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Hora salida</label>
-							<input type="time" bind:value={flightFields.outbound_departure_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-outbound-origin">Origen</label>
+							<input id="fl-outbound-origin" type="text" bind:value={flightFields.outbound_origin} placeholder="MAD" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Hora llegada</label>
-							<input type="time" bind:value={flightFields.outbound_arrival_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-outbound-dest">Destino</label>
+							<input id="fl-outbound-dest" type="text" bind:value={flightFields.outbound_destination} placeholder="CDG" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
+						</div>
+					</div>
+					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+						<div class="space-y-1">
+							<label class="text-xs font-medium text-muted-foreground" for="fl-outbound-dep">Hora salida</label>
+							<input id="fl-outbound-dep" type="time" bind:value={flightFields.outbound_departure_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
+						</div>
+						<div class="space-y-1">
+							<label class="text-xs font-medium text-muted-foreground" for="fl-outbound-arr">Hora llegada</label>
+							<input id="fl-outbound-arr" type="time" bind:value={flightFields.outbound_arrival_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 					</div>
 				</div>
@@ -1131,32 +1227,32 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 					</div>
 					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Vuelo</label>
-							<input type="text" bind:value={flightFields.return_flight_number} placeholder="IB5678" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-return-flight">Vuelo</label>
+							<input id="fl-return-flight" type="text" bind:value={flightFields.return_flight_number} placeholder="IB5678" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Aerolínea</label>
-							<input type="text" bind:value={flightFields.return_airline} placeholder="Iberia" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
-						</div>
-					</div>
-					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Origen</label>
-							<input type="text" bind:value={flightFields.return_origin} placeholder="CDG" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
-						</div>
-						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Destino</label>
-							<input type="text" bind:value={flightFields.return_destination} placeholder="MAD" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-return-airline">Aerolínea</label>
+							<input id="fl-return-airline" type="text" bind:value={flightFields.return_airline} placeholder="Iberia" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 					</div>
 					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Hora salida</label>
-							<input type="time" bind:value={flightFields.return_departure_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-return-origin">Origen</label>
+							<input id="fl-return-origin" type="text" bind:value={flightFields.return_origin} placeholder="CDG" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-xs font-medium text-muted-foreground">Hora llegada</label>
-							<input type="time" bind:value={flightFields.return_arrival_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
+							<label class="text-xs font-medium text-muted-foreground" for="fl-return-dest">Destino</label>
+							<input id="fl-return-dest" type="text" bind:value={flightFields.return_destination} placeholder="MAD" class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-ring" />
+						</div>
+					</div>
+					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+						<div class="space-y-1">
+							<label class="text-xs font-medium text-muted-foreground" for="fl-return-dep">Hora salida</label>
+							<input id="fl-return-dep" type="time" bind:value={flightFields.return_departure_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
+						</div>
+						<div class="space-y-1">
+							<label class="text-xs font-medium text-muted-foreground" for="fl-return-arr">Hora llegada</label>
+							<input id="fl-return-arr" type="time" bind:value={flightFields.return_arrival_time} class="w-full rounded-lg border border-input bg-background px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
 					</div>
 				</div>
@@ -1184,8 +1280,23 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 {/if}
 
 {#if showBudgetModal}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onclick={() => (showBudgetModal = false)}>
-		<div class="w-full max-w-md overflow-y-auto rounded-2xl bg-background shadow-2xl" onclick={(e) => e.stopPropagation()}>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="button"
+		tabindex="-1"
+		aria-label="Close budget modal"
+		onkeydown={(e) => e.key === 'Escape' && (showBudgetModal = false)}
+		onclick={() => (showBudgetModal = false)}
+	>
+		<div
+			class="w-full max-w-md overflow-y-auto rounded-2xl bg-background shadow-2xl"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Cost breakdown"
+			tabindex="-1"
+			onkeydown={(e) => e.stopPropagation()}
+			onclick={(e) => e.stopPropagation()}
+		>
 			<div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-5 py-4">
 				<h2 class="text-lg font-semibold">Desglose de costes</h2>
 				<button class="rounded-md p-1.5 hover:bg-accent" onclick={() => (showBudgetModal = false)}>

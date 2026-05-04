@@ -82,17 +82,16 @@ export const actions: Actions = {
 			}
 		}
 
-		// Add missing days
-		const dayIndexOffset = existingDates.size;
+		// Add missing days (upsert prevents duplicates)
 		let idx = 1;
 		for (const dateStr of expectedDates) {
-			if (!existingDates.has(dateStr)) {
-				await supabase.from('days').insert({
+			await supabase
+				.from('days')
+				.upsert({
 					trip_id: params.id,
 					date: dateStr,
 					day_index: idx,
-				});
-			}
+				}, { onConflict: 'trip_id, date' });
 			idx++;
 		}
 
