@@ -41,7 +41,7 @@
 			<div class="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:h-16 sm:gap-4">
 				<!-- Logo -->
 				<a href="/dashboard" class="flex shrink-0 items-center gap-3">
-					<img src={logo} alt="TRAVELy" class="h-9 w-auto sm:h-11" />
+					<img src={logo} alt="TRAVELy" class="h-9 w-auto sm:h-12" />
 					<span class="font-serif text-base italic tracking-tight sm:text-lg">TRAVELy</span>
 				</a>
 

@@ -50,7 +50,7 @@
 <div class="flex min-h-[80vh] items-center justify-center">
 	<div class="w-full max-w-sm space-y-6">
 		<div class="text-center">
-			<img src={logo} alt="TRAVELy" class="mx-auto mb-4 h-16 w-auto drop-shadow-sm" />
+			<img src={logo} alt="TRAVELy" class="mx-auto mb-4 h-24 w-auto drop-shadow-md" />
 			<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Iniciar sesión</h1>
 			<p class="mt-1 text-sm text-muted-foreground">Bienvenido de vuelta a TRAVELy</p>
 		</div>
