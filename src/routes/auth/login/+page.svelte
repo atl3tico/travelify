@@ -121,7 +121,7 @@
 				<label for="remember" class="text-sm text-muted-foreground cursor-pointer">Recordarme</label>
 			</div>
 
-			<Button type="submit" disabled={loading} class="w-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0">
+			<Button type="submit" disabled={loading} class="w-full bg-gradient-to-r from-brand-blue to-brand-blue-dark hover:from-brand-blue-dark hover:to-brand-blue-deep text-white border-0">
 				{loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
 			</Button>
 		</form>

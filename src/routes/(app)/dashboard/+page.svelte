@@ -43,10 +43,10 @@
 <div class="space-y-8">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<div>
-			<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Mis viajes</h1>
+			<h1 class="text-2xl font-bold bg-gradient-to-r from-brand-blue to-brand-orange bg-clip-text text-transparent">Mis viajes</h1>
 			<p class="text-sm text-muted-foreground">Planifica y organiza tus aventuras</p>
 		</div>
-		<Button href="/trips/new" class="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0">
+		<Button href="/trips/new" class="bg-gradient-to-r from-brand-blue to-brand-orange hover:from-brand-orange-dark hover:to-brand-blue-dark text-white border-0">
 			<PlusIcon class="size-4" />
 			Nuevo viaje
 		</Button>
@@ -57,7 +57,7 @@
 			<MapPinIcon class="mb-4 size-12 text-muted-foreground/50" />
 			<h2 class="text-lg font-medium">Sin viajes todavía</h2>
 			<p class="mt-1 text-sm text-muted-foreground">Crea tu primer viaje y empieza a planificar</p>
-			<Button class="mt-6 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0" href="/trips/new">
+			<Button class="mt-6 bg-gradient-to-r from-brand-blue to-brand-orange hover:from-brand-orange-dark hover:to-brand-blue-dark text-white border-0" href="/trips/new">
 				<PlusIcon class="size-4" />
 				Crear viaje
 			</Button>

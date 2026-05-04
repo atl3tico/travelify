@@ -545,7 +545,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			<button
 				onclick={() => (activeDayIndex = i)}
 				class="shrink-0 rounded-lg border px-4 py-2.5 text-sm transition-all min-h-11 {activeDayIndex === i
-					? 'border-transparent bg-gradient-to-r from-sky-500 to-indigo-500 text-white'
+					? 'border-transparent bg-gradient-to-r from-brand-blue to-brand-blue-dark text-white'
 					: 'border-border hover:border-primary/30 hover:bg-accent'}"
 			>
 				<div class="text-xs opacity-70">Día {day.day_index}</div>
@@ -672,7 +672,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 					<Button
 						size="sm"
 						onclick={() => { editingPlace = null; showPlaceModal = true; }}
-						class="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0"
+						class="bg-gradient-to-r from-brand-blue to-brand-blue-dark hover:from-brand-blue-dark hover:to-brand-blue-deep text-white border-0"
 					>
 						<PlusIcon class="size-3.5" />
 						<span class="sm:inline">Añadir</span>
@@ -1114,7 +1114,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 				<button
 					onclick={handleRedistribute}
 					disabled={redistributeSelectedDays.size < 2 || redistributing}
-					class="w-full rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:from-sky-600 hover:to-indigo-600 disabled:opacity-50"
+					class="w-full rounded-lg bg-gradient-to-r from-brand-blue to-brand-blue-dark px-4 py-2.5 text-sm font-medium text-white hover:from-brand-blue-dark hover:to-brand-blue-deep disabled:opacity-50"
 				>
 					{redistributing ? 'Redistribuyendo...' : 'Redistribuir'}
 				</button>
@@ -1305,7 +1305,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			</div>
 
 			<div class="space-y-4 p-5">
-				<div class="rounded-lg bg-gradient-to-r from-sky-500/10 to-indigo-500/10 p-4 text-center">
+				<div class="rounded-lg bg-gradient-to-r from-brand-blue/10 to-brand-orange/10 p-4 text-center">
 					<div class="text-3xl font-bold">{totalBudget.toFixed(0)}€</div>
 					<div class="text-sm text-muted-foreground">Coste total estimado</div>
 				</div>

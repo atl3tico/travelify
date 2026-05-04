@@ -53,7 +53,7 @@
 		{#if emailSent}
 			<div class="space-y-4 text-center">
 				<MailIcon class="mx-auto size-12 text-sky-500" />
-				<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Revisa tu correo</h1>
+				<h1 class="text-2xl font-bold bg-gradient-to-r from-brand-blue to-brand-orange bg-clip-text text-transparent">Revisa tu correo</h1>
 				<p class="text-sm text-muted-foreground">
 					Enviamos un enlace de confirmación a <strong>{email}</strong>. Haz clic para verificar tu cuenta.
 				</p>
@@ -125,7 +125,7 @@
 					/>
 				</div>
 
-				<Button type="submit" disabled={loading} class="w-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0">
+				<Button type="submit" disabled={loading} class="w-full bg-gradient-to-r from-brand-blue to-brand-blue-dark hover:from-brand-blue-dark hover:to-brand-blue-deep text-white border-0">
 					{loading ? 'Creando cuenta...' : 'Registrarse'}
 				</Button>
 			</form>

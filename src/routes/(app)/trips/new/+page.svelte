@@ -56,7 +56,7 @@
 
 <div class="mx-auto max-w-lg space-y-6">
 	<div>
-		<h1 class="text-2xl font-bold bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Nuevo viaje</h1>
+		<h1 class="text-2xl font-bold bg-gradient-to-r from-brand-blue to-brand-orange bg-clip-text text-transparent">Nuevo viaje</h1>
 		<p class="mt-1 text-sm text-muted-foreground">Planifica tu próxima aventura</p>
 	</div>
 
@@ -143,7 +143,7 @@
 
 		<div class="flex gap-3 pt-2">
 			<Button variant="outline" href="/dashboard">Cancelar</Button>
-			<Button type="submit" disabled={loading} class="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white border-0">
+			<Button type="submit" disabled={loading} class="bg-gradient-to-r from-brand-blue to-brand-orange hover:from-brand-orange-dark hover:to-brand-blue-dark text-white border-0">
 				{loading ? 'Creando...' : 'Crear viaje'}
 			</Button>
 		</div>
