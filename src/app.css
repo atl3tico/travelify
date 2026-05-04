@@ -38,6 +38,26 @@
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
 	--radius-xl: calc(var(--radius) + 4px);
+
+	/* Brand colors from logo */
+	--color-brand-orange: #F5A623;
+	--color-brand-orange-dark: #D9821A;
+	--color-brand-blue: #1F6FA9;
+	--color-brand-blue-dark: #0D3B66;
+	--color-brand-blue-deep: #0A2540;
+
+	/* Keyframes */
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
+
+	@keyframes accordion-down {
+		from { height: 0; }
+		to { height: var(--radix-accordion-content-height); }
+	}
+	@keyframes accordion-up {
+		from { height: var(--radix-accordion-content-height); }
+		to { height: 0; }
+	}
 }
 
 @layer base {
@@ -132,5 +152,9 @@
 	}
 	.scrollbar-none::-webkit-scrollbar {
 		display: none;
+	}
+
+	.hero-travel {
+		background-image: linear-gradient(135deg, #F5A623 0%, #D9821A 40%, #1F6FA9 70%, #0D3B66 100%);
 	}
 }

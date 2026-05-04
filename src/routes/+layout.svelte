@@ -41,7 +41,7 @@
 				<!-- Logo -->
 				<a href="/dashboard" class="flex shrink-0 items-center gap-3">
 					<img src={logo} alt="TRAVELy" class="h-9 w-auto sm:h-11" />
-					<span class="font-serif text-lg italic tracking-tight sm:text-xl">TRAVELy</span>
+					<span class="font-serif text-lg italic tracking-tight text-brand-blue-dark sm:text-xl">TRAVELy</span>
 				</a>
 
 				<!-- Spacer -->
