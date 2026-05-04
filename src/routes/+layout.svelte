@@ -3,7 +3,6 @@
 	import logo from '$lib/assets/logo.png';
 	import '../app.css';
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
-	import { goto } from '$app/navigation';
 	import { Toaster } from '$lib/sonner';
 	import { toggleMode, mode, ModeWatcher } from 'mode-watcher';
 
@@ -14,7 +13,7 @@
 
 	supabase.auth.onAuthStateChange(async (event) => {
 		if (event === 'SIGNED_OUT') {
-			await goto('/auth/login');
+			window.location.href = '/auth/login';
 		}
 	});
 
