@@ -1,6 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
-	import logo from '$lib/assets/logo.svg';
+	import logo from '$lib/assets/logo.jpg';
 	import '../app.css';
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { goto } from '$app/navigation';

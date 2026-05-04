@@ -2,7 +2,7 @@
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/button';
-	import logo from '$lib/assets/logo.svg';
+	import logo from '$lib/assets/logo.jpg';
 	import MailIcon from '@lucide/svelte/icons/mail';
 
 	let email = $state('');
