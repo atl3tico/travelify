@@ -6,12 +6,6 @@
 	import { goto } from '$app/navigation';
 	import { Toaster } from '$lib/sonner';
 	import { toggleMode, mode, ModeWatcher } from 'mode-watcher';
-	import { Button } from '$lib/button';
-	import SunIcon from '@lucide/svelte/icons/sun';
-	import MoonIcon from '@lucide/svelte/icons/moon';
-	import LogOutIcon from '@lucide/svelte/icons/log-out';
-	import MenuIcon from '@lucide/svelte/icons/menu';
-	import XIcon from '@lucide/svelte/icons/x';
 
 	let { children, data } = $props();
 	let mobileMenuOpen = $state(false);
@@ -43,24 +37,35 @@
 	<ModeWatcher />
 
 	{#if data.user}
-		<header class="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+		<header class="sticky top-0 z-40 border-b bg-background">
 			<div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
 				<a href="/dashboard" class="flex items-center gap-2">
 					<img src={logo} alt="TRAVELy" class="h-7 w-auto" />
+					<span class="hidden sm:inline text-sm font-semibold tracking-tight">TRAVELy</span>
 				</a>
 
 				<div class="hidden items-center gap-2 sm:flex">
 					<span class="text-sm text-muted-foreground">{data.user.email}</span>
-					<Button variant="ghost" size="icon" onclick={toggleMode} title="Cambiar modo oscuro">
+
+					<button
+						class="rounded-lg size-8 inline-flex items-center justify-center transition-all hover:bg-muted hover:text-foreground"
+						onclick={toggleMode}
+						title="Cambiar modo oscuro"
+					>
 						{#if mode.current === 'dark'}
-							<SunIcon class="size-4" />
+							<svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
 						{:else}
-							<MoonIcon class="size-4" />
+							<svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
 						{/if}
-					</Button>
-					<Button variant="ghost" size="icon" onclick={handleLogout} title="Cerrar sesión">
-						<LogOutIcon class="size-4" />
-					</Button>
+					</button>
+
+					<button
+						class="rounded-lg size-8 inline-flex items-center justify-center transition-all hover:bg-muted hover:text-foreground"
+						onclick={handleLogout}
+						title="Cerrar sesión"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>
+					</button>
 				</div>
 
 				<button
@@ -68,25 +73,35 @@
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
 				>
 					{#if mobileMenuOpen}
-						<XIcon class="size-5" />
+						<svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 					{:else}
-						<MenuIcon class="size-5" />
+						<svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>
 					{/if}
 				</button>
 			</div>
 
 			{#if mobileMenuOpen}
-				<div class="border-t border-border bg-background px-4 py-3 sm:hidden">
+				<div class="border-t bg-background px-4 py-3 sm:hidden">
 					<p class="mb-3 text-sm text-muted-foreground">{data.user.email}</p>
 					<div class="flex gap-2">
-						<Button variant="outline" size="sm" onclick={toggleMode}>
-							{#if mode.current === 'dark'}<SunIcon class="size-4" />{:else}<MoonIcon class="size-4" />{/if}
+						<button
+							class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+							onclick={toggleMode}
+						>
+							{#if mode.current === 'dark'}
+								<svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+							{/if}
 							Tema
-						</Button>
-						<Button variant="outline" size="sm" onclick={handleLogout}>
-							<LogOutIcon class="size-4" />
+						</button>
+						<button
+							class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+							onclick={handleLogout}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>
 							Salir
-						</Button>
+						</button>
 					</div>
 				</div>
 			{/if}
