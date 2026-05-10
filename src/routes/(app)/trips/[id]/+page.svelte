@@ -31,6 +31,8 @@ import PlaneIcon from '@lucide/svelte/icons/plane';
 import SparklesIcon from '@lucide/svelte/icons/sparkles';
 import ShuffleIcon from '@lucide/svelte/icons/shuffle';
 import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
+import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 import WalletIcon from '@lucide/svelte/icons/wallet';
 
 	let { data }: { data: PageData } = $props();
@@ -40,18 +42,20 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 	let activeDay = $derived(days[activeDayIndex]);
 	let weather = $derived(data.weather ?? []);
 	let activeDayWeather = $derived(activeDay ? getWeatherForDate(activeDay.date) : null);
+	let orderVersion = $state(0);
 
 	$effect(() => {
 		activeDayIndex;
 		zoomPlaceId = null;
 	});
-	let activePlaces = $derived(
-		places
+	let activePlaces = $derived.by(() => {
+		orderVersion;
+		return places
 			.filter((p: { day_id: string }) => p.day_id === activeDay?.id)
 			.sort(
 				(a: { order_index: number }, b: { order_index: number }) => a.order_index - b.order_index
-			)
-	);
+			);
+	});
 
 	let showPlaceModal = $state(false);
 	let editingPlace = $state<any>(null);
@@ -117,6 +121,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 	let redistributeSelectedDays = $state<Set<string>>(new Set());
 	let redistributing = $state(false);
 	let showBudgetModal = $state(false);
+	let reorderingIndex = $state<number | null>(null);
 
 	let totalPlaces = $derived(places.length);
 	let totalDays = $derived(days.length);
@@ -271,16 +276,57 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			dragOverIndex = null;
 			return;
 		}
+		reorderingIndex = dragIndex;
 		const items = [...activePlaces];
 		const [moved] = items.splice(dragIndex, 1);
 		items.splice(dragOverIndex, 0, moved);
 		const orders = items.map((p: { id: string }, i: number) => ({ id: p.id, order_index: i }));
-		const form = new FormData();
-		form.set('orders', JSON.stringify(orders));
-		await fetch('?/reorderPlaces', { method: 'POST', body: form });
+
+		// Optimistic: update local order_index immediately
+		for (const o of orders) {
+			const place = data.places.find((p: { id: string }) => p.id === o.id);
+			if (place) place.order_index = o.order_index;
+		}
+		orderVersion++;
+
 		dragIndex = null;
 		dragOverIndex = null;
-		invalidate();
+
+		const form = new FormData();
+		form.set('orders', JSON.stringify(orders));
+		try {
+			await fetch('?/reorderPlaces', { method: 'POST', body: form });
+		} catch {
+			invalidate();
+		}
+		reorderingIndex = null;
+	}
+
+	async function movePlace(index: number, direction: -1 | 1) {
+		const targetIndex = index + direction;
+		if (targetIndex < 0 || targetIndex >= activePlaces.length) return;
+
+		reorderingIndex = index;
+		const items = [...activePlaces];
+		const [moved] = items.splice(index, 1);
+		items.splice(targetIndex, 0, moved);
+		const orders = items.map((p: { id: string }, i: number) => ({ id: p.id, order_index: i }));
+
+		// Optimistic: update local order_index immediately
+		for (const o of orders) {
+			const place = data.places.find((p: { id: string }) => p.id === o.id);
+			if (place) place.order_index = o.order_index;
+		}
+		orderVersion++;
+
+		const form = new FormData();
+		form.set('orders', JSON.stringify(orders));
+		try {
+			await fetch('?/reorderPlaces', { method: 'POST', body: form });
+		} catch {
+			invalidate();
+		}
+		reorderingIndex = null;
 	}
 
 	function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -305,11 +351,12 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 		const startLat = activeAcc?.lat ?? items[0].lat;
 		const startLng = activeAcc?.lng ?? items[0].lng;
 
-		const optimized: typeof items = [];
+		let optimized: typeof items = [];
 		const remaining = [...items];
 		let currentLat = startLat;
 		let currentLng = startLng;
 
+		// Nearest-neighbor: build initial chain
 		while (remaining.length > 0) {
 			let nearestIdx = 0;
 			let nearestDist = Infinity;
@@ -326,6 +373,9 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			currentLng = nearest.lng;
 		}
 
+		// 2-opt: eliminate crossing edges
+		optimized = twoOpt(optimized, startLat, startLng);
+
 		const orders = optimized.map((p: { id: string }, i: number) => ({ id: p.id, order_index: i }));
 		const form = new FormData();
 		form.set('orders', JSON.stringify(orders));
@@ -337,6 +387,44 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			toast.error('Error al optimizar la ruta');
 		}
 		invalidate();
+	}
+
+	function twoOpt<T extends { lat: number; lng: number }>(route: T[], startLat: number, startLng: number): T[] {
+		if (route.length < 3) return route;
+		let improved = true;
+		let result = [...route];
+		let iterations = 0;
+		const maxIterations = 500;
+
+		while (improved && iterations < maxIterations) {
+			improved = false;
+			iterations++;
+			for (let i = 0; i < result.length - 2; i++) {
+				for (let j = i + 2; j < result.length; j++) {
+					const aLat = i === 0 ? startLat : result[i - 1].lat;
+					const aLng = i === 0 ? startLng : result[i - 1].lng;
+					const bLat = result[i].lat;
+					const bLng = result[i].lng;
+					const cLat = result[j - 1].lat;
+					const cLng = result[j - 1].lng;
+					const dLat = result[j].lat;
+					const dLng = result[j].lng;
+
+					const oldDist = haversine(aLat, aLng, bLat, bLng) + haversine(cLat, cLng, dLat, dLng);
+					const newDist = haversine(aLat, aLng, cLat, cLng) + haversine(bLat, bLng, dLat, dLng);
+
+					if (newDist < oldDist - 0.001) {
+						// Reverse segment [i..j-1]
+						const before = result.slice(0, i);
+						const reversed = result.slice(i, j).reverse();
+						const after = result.slice(j);
+						result = [...before, ...reversed, ...after];
+						improved = true;
+					}
+				}
+			}
+		}
+		return result;
 	}
 
 	async function suggestTimes() {
@@ -726,7 +814,7 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 						<!-- Letter Badge -->
 						<div class="absolute top-2 left-2 sm:top-3 sm:left-3">
 							<span class="flex size-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
-								{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[index]}
+								{index + 1}
 							</span>
 						</div>
 
@@ -739,11 +827,30 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 								onclick={(e) => e.stopPropagation()}
 							>
 								<button
-									onclick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`, '_blank')}
+									onclick={() => {
+										const q = [place.name, place.address].filter(Boolean).join(', ');
+										window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
+									}}
 									class="rounded-md bg-black/50 p-1.5 text-white backdrop-blur hover:bg-blue-500/70"
 									title="Abrir en Google Maps"
 								>
 									<ExternalLinkIcon class="size-4" />
+								</button>
+								<button
+									onclick={() => movePlace(index, -1)}
+									disabled={index === 0 || reorderingIndex !== null}
+									class="rounded-md bg-black/50 p-1.5 text-white backdrop-blur hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed"
+									title="Subir posición"
+								>
+									<ChevronUpIcon class="size-4" />
+								</button>
+								<button
+									onclick={() => movePlace(index, 1)}
+									disabled={index === activePlaces.length - 1 || reorderingIndex !== null}
+									class="rounded-md bg-black/50 p-1.5 text-white backdrop-blur hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed"
+									title="Bajar posición"
+								>
+									<ChevronDownIcon class="size-4" />
 								</button>
 								<button
 									onclick={() => { editingPlace = place; showPlaceModal = true; }}
@@ -968,11 +1075,14 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 										</span>
 									{/if}
 									<button
-										onclick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`, '_blank')}
-										class="ml-auto rounded p-1 text-muted-foreground hover:text-foreground"
-										title="Abrir en Google Maps"
-									>
-										<ExternalLinkIcon class="size-3.5" />
+									onclick={() => {
+										const q = [place.name, place.address].filter(Boolean).join(', ');
+										window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
+									}}
+									class="ml-auto rounded p-1 text-muted-foreground hover:text-foreground"
+									title="Abrir en Google Maps"
+								>
+									<ExternalLinkIcon class="size-3.5" />
 									</button>
 								</div>
 								<h3 class="mt-1 font-medium">{place.name}</h3>

@@ -45,7 +45,12 @@
 	let notes = $state('');
 	let error = $state('');
 
+	let searchInput: HTMLInputElement | undefined = $state();
 	let debounceTimer: ReturnType<typeof setTimeout>;
+
+	$effect(() => {
+		searchInput?.focus();
+	});
 
 	function mapCategory(types: string[]): string {
 		if (types.includes('restaurant') || types.includes('food')) return 'restaurant';
@@ -176,6 +181,7 @@
 			<SearchIcon class="absolute left-3 top-2.5 size-4 text-muted-foreground" />
 			<input
 				type="text"
+				bind:this={searchInput}
 				value={query}
 				oninput={onInput}
 				placeholder="Buscar un lugar..."

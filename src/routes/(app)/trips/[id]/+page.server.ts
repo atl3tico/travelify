@@ -241,9 +241,11 @@ export const actions: Actions = {
 			order_index: number;
 		}[];
 
-		for (const item of orders) {
-			await supabase.from('places').update({ order_index: item.order_index }).eq('id', item.id);
-		}
+		await Promise.all(
+			orders.map((item) =>
+				supabase.from('places').update({ order_index: item.order_index }).eq('id', item.id)
+			)
+		);
 	},
 
 	redistributePlaces: async ({ request, locals: { supabase, safeGetSession } }) => {

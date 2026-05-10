@@ -27,6 +27,7 @@
 		lat: number;
 		lng: number;
 		day_id: string;
+		order_index: number;
 		flight_number?: string | null;
 		airline?: string | null;
 		origin?: string | null;
@@ -46,7 +47,7 @@
 		place?: Place | null;
 		dayId: string;
 		days?: { id: string; date: string; title?: string | null }[];
-		allPlaces?: { id: string; name: string; lat: number; lng: number; day_id: string }[];
+		allPlaces?: { id: string; name: string; lat: number; lng: number; day_id: string; order_index: number }[];
 		onClose: () => void;
 		onSaved: () => void;
 	} = $props();
@@ -57,6 +58,11 @@
 	let isEdit = $derived(place !== null);
 	let loading = $state(false);
 	let selectedDayId = $state(snap.place?.day_id ?? snap.dayId);
+	let selectedPosition = $state(0);
+	let dayPlaceCount = $derived.by(() => {
+		const targetDayId = selectedDayId;
+		return allPlaces.filter((p) => p.day_id === targetDayId).length;
+	});
 
 	let selectedDetails: {
 		name: string;
@@ -85,6 +91,20 @@
 	let ticketUrl = $state(snap.place?.ticket_url ?? '');
 	let error = $state('');
 	let changingPlace = $state(false);
+
+	let initialPosition = $state(1);
+	$effect(() => {
+		if (isEdit && place) {
+			const dayPlaces = allPlaces
+				.filter((p) => p.day_id === place.day_id)
+				.sort((a, b) => a.order_index - b.order_index);
+			const pos = dayPlaces.findIndex((p) => p.id === place.id);
+			if (pos !== -1) {
+				initialPosition = pos + 1;
+				selectedPosition = pos + 1;
+			}
+		}
+	});
 
 	let searchQuery = $state('');
 	let searchResults: { place_id: string; description: string; structured_formatting?: { main_text: string; secondary_text?: string } }[] = $state([]);
@@ -286,6 +306,26 @@
 		error = '';
 
 		if (isEdit && place) {
+			// Handle position change
+			if (selectedPosition !== initialPosition || selectedDayId !== place.day_id) {
+				const targetDayId = selectedDayId;
+				const dayPlaces = allPlaces
+					.filter((p) => p.day_id === place.day_id)
+					.sort((a, b) => a.order_index - b.order_index);
+				const currentIdx = dayPlaces.findIndex((p) => p.id === place.id);
+				if (currentIdx !== -1) {
+					const [moved] = dayPlaces.splice(currentIdx, 1);
+					// If changing day, use the new position in the target day
+					// Otherwise use the selected position within the same day
+					const targetPos = selectedDayId !== place.day_id ? 0 : Math.max(0, Math.min(selectedPosition - 1, dayPlaces.length));
+					dayPlaces.splice(targetPos, 0, moved);
+					const orders = dayPlaces.map((p, i) => ({ id: p.id, order_index: i }));
+					const reorderForm = new FormData();
+					reorderForm.set('orders', JSON.stringify(orders));
+					await fetch('?/reorderPlaces', { method: 'POST', body: reorderForm });
+				}
+			}
+
 			const form = new FormData();
 			form.set('place_id', place.id);
 			form.set('name', name);
@@ -541,6 +581,39 @@
 						{/each}
 					</select>
 				</div>
+
+				{#if isEdit}
+					<div class="space-y-1">
+						<label for="place-position" class="text-sm font-medium">Posición</label>
+						<div class="flex items-center gap-2">
+							<button
+								type="button"
+								onclick={() => selectedPosition = Math.max(1, selectedPosition - 1)}
+								disabled={selectedPosition <= 1}
+								class="rounded-md border border-input px-2 py-1.5 text-sm hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
+							>
+								←
+							</button>
+							<input
+								id="place-position"
+								type="number"
+								bind:value={selectedPosition}
+								min="1"
+								max={dayPlaceCount}
+								class="w-16 rounded-lg border border-input bg-background px-2 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+							/>
+							<span class="text-sm text-muted-foreground">de {dayPlaceCount}</span>
+							<button
+								type="button"
+								onclick={() => selectedPosition = Math.min(dayPlaceCount, selectedPosition + 1)}
+								disabled={selectedPosition >= dayPlaceCount}
+								class="rounded-md border border-input px-2 py-1.5 text-sm hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
+							>
+								→
+							</button>
+						</div>
+					</div>
+				{/if}
 
 				<div class="space-y-1">
 					<span class="text-sm font-medium">Categoría</span>

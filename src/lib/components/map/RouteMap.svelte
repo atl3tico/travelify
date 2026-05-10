@@ -151,13 +151,14 @@
 		}
 
 			s.forEach((p, i) => {
-				const letter = String.fromCharCode(65 + i);
-				const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#18181b" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" fill="white" font-size="15" font-weight="bold" font-family="Arial,Helvetica,sans-serif">${letter}</text></svg>`;
+				const label = String(i + 1);
+				const fontSize = i >= 9 ? '13' : '15';
+				const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#18181b" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" fill="white" font-size="${fontSize}" font-weight="bold" font-family="Arial,Helvetica,sans-serif">${label}</text></svg>`;
 				const svgUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 				gMarkers.push(new google.maps.Marker({
 					map,
 					position: { lat: p.lat, lng: p.lng },
-					title: `${letter}. ${p.name}`,
+					title: `${label}. ${p.name}`,
 					icon: {
 						url: svgUrl,
 						scaledSize: new google.maps.Size(32, 32),
