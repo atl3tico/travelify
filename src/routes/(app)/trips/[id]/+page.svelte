@@ -33,7 +33,9 @@ import ShuffleIcon from '@lucide/svelte/icons/shuffle';
 import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
 import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-import WalletIcon from '@lucide/svelte/icons/wallet';
+ import WalletIcon from '@lucide/svelte/icons/wallet';
+ import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+ import EyeIcon from '@lucide/svelte/icons/eye';
 
 	let { data }: { data: PageData } = $props();
 	let activeDayIndex = $state(0);
@@ -268,6 +270,34 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 			toast.error('Error al eliminar');
 		}
 		invalidate();
+	}
+
+	async function toggleImportant(placeId: string) {
+		const place = data.places.find((p: { id: string }) => p.id === placeId);
+		if (place) place.important = !place.important;
+		orderVersion++;
+
+		const form = new FormData();
+		form.set('place_id', placeId);
+		try {
+			await fetch('?/toggleImportant', { method: 'POST', body: form });
+		} catch {
+			invalidate();
+		}
+	}
+
+	async function toggleSkipRoute(placeId: string) {
+		const place = data.places.find((p: { id: string }) => p.id === placeId);
+		if (place) place.skip_route = !place.skip_route;
+		orderVersion++;
+
+		const form = new FormData();
+		form.set('place_id', placeId);
+		try {
+			await fetch('?/toggleSkipRoute', { method: 'POST', body: form });
+		} catch {
+			invalidate();
+		}
 	}
 
 	async function handleReorder() {
@@ -812,10 +842,20 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 						<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
 
 						<!-- Letter Badge -->
-						<div class="absolute top-2 left-2 sm:top-3 sm:left-3">
+						<div class="absolute top-2 left-2 flex items-center gap-1 sm:top-3 sm:left-3">
 							<span class="flex size-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
 								{index + 1}
 							</span>
+							{#if place.important}
+								<span class="flex size-5 items-center justify-center rounded-full bg-amber-500 shadow-lg sm:size-6">
+									<StarIcon class="size-3 fill-white text-white sm:size-3.5" />
+								</span>
+							{/if}
+							{#if place.skip_route}
+								<span class="flex size-5 items-center justify-center rounded-full bg-gray-400 shadow-lg sm:size-6">
+									<EyeOffIcon class="size-3 text-white sm:size-3.5" />
+								</span>
+							{/if}
 						</div>
 
 							<div
@@ -825,7 +865,25 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 								tabindex="-1"
 								onkeydown={(e) => e.stopPropagation()}
 								onclick={(e) => e.stopPropagation()}
-							>
+								>
+								<button
+									onclick={() => toggleImportant(place.id)}
+									class="rounded-md p-1.5 backdrop-blur {place.important ? 'bg-amber-500/80 text-white' : 'bg-black/50 text-white hover:bg-amber-500/50'}"
+									title={place.important ? 'Quitar importancia' : 'Marcar como importante'}
+								>
+									<StarIcon class="size-4 {place.important ? 'fill-white' : ''}" />
+								</button>
+								<button
+									onclick={() => toggleSkipRoute(place.id)}
+									class="rounded-md p-1.5 backdrop-blur {place.skip_route ? 'bg-gray-500/80 text-white' : 'bg-black/50 text-white hover:bg-gray-500/50'}"
+									title={place.skip_route ? 'Incluir en ruta' : 'Quitar de ruta'}
+								>
+									{#if place.skip_route}
+										<EyeOffIcon class="size-4" />
+									{:else}
+										<EyeIcon class="size-4" />
+									{/if}
+								</button>
 								<button
 									onclick={() => {
 										const q = [place.name, place.address].filter(Boolean).join(', ');
@@ -1073,6 +1131,12 @@ import WalletIcon from '@lucide/svelte/icons/wallet';
 										<span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium {mealColors[place.meal_type] || ''}">
 											{mealIcons[place.meal_type] || ''} {mealLabels[place.meal_type] || place.meal_type}
 										</span>
+									{/if}
+									{#if place.important}
+										<StarIcon class="size-3.5 fill-amber-400 text-amber-400" />
+									{/if}
+									{#if place.skip_route}
+										<EyeOffIcon class="size-3.5 text-gray-400" />
 									{/if}
 									<button
 									onclick={() => {

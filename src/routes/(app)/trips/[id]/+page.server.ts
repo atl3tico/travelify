@@ -148,6 +148,8 @@ export const actions: Actions = {
 			arrival_time: (form.get('arrival_time') as string) || null,
 			estimated_cost: form.has('estimated_cost') ? parseFloat(form.get('estimated_cost') as string) || 0 : 0,
 			meal_type: (form.get('meal_type') as string) || null,
+			important: form.has('important') && form.get('important') === 'true',
+			skip_route: form.has('skip_route') && form.get('skip_route') === 'true',
 		});
 
 		if (err) return fail(500, { error: err.message });
@@ -197,6 +199,8 @@ export const actions: Actions = {
 		if (form.has('rating')) updates.rating = form.get('rating') ? parseFloat(form.get('rating') as string) : null;
 		if (form.has('estimated_cost')) updates.estimated_cost = parseFloat(form.get('estimated_cost') as string) || 0;
 		if (form.has('meal_type')) updates.meal_type = (form.get('meal_type') as string) || null;
+		if (form.has('important')) updates.important = form.get('important') === 'true';
+		if (form.has('skip_route')) updates.skip_route = form.get('skip_route') === 'true';
 
 		const ticketFile = form.get('ticket_file') as File | null;
 		if (ticketFile && ticketFile.size > 0) {
@@ -229,6 +233,50 @@ export const actions: Actions = {
 		if (!placeId) return fail(400);
 
 		await supabase.from('places').delete().eq('id', placeId);
+	},
+
+	toggleImportant: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401);
+
+		const form = await request.formData();
+		const placeId = form.get('place_id') as string;
+		if (!placeId) return fail(400);
+
+		const { data: place } = await supabase
+			.from('places')
+			.select('important')
+			.eq('id', placeId)
+			.single();
+
+		await supabase
+			.from('places')
+			.update({ important: !place?.important })
+			.eq('id', placeId);
+
+		return { success: true };
+	},
+
+	toggleSkipRoute: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401);
+
+		const form = await request.formData();
+		const placeId = form.get('place_id') as string;
+		if (!placeId) return fail(400);
+
+		const { data: place } = await supabase
+			.from('places')
+			.select('skip_route')
+			.eq('id', placeId)
+			.single();
+
+		await supabase
+			.from('places')
+			.update({ skip_route: !place?.skip_route })
+			.eq('id', placeId);
+
+		return { success: true };
 	},
 
 	reorderPlaces: async ({ request, locals: { supabase, safeGetSession } }) => {

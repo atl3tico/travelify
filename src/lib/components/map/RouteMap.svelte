@@ -11,6 +11,8 @@
 		lat: number;
 		lng: number;
 		order_index: number;
+		important?: boolean;
+		skip_route?: boolean;
 	}
 
 	let {
@@ -46,6 +48,8 @@
 	let includeAccommodation = $state(false);
 
 	const sorted = $derived([...places].sort((a, b) => a.order_index - b.order_index));
+	const routePlaces = $derived(sorted.filter((p) => !p.skip_route));
+	const skippedPlaces = $derived(sorted.filter((p) => p.skip_route));
 	const hasAccommodation = $derived(accommodationLat !== null && accommodationLng !== null);
 
 	const travelModes: { value: TravelMode; label: string; icon: string }[] = [
@@ -65,11 +69,12 @@
 	$effect(() => {
 		travelMode;
 		includeAccommodation;
-		const s = sorted;
+		const r = routePlaces;
+		const sk = skippedPlaces;
 		const aLat = includeAccommodation ? accommodationLat : null;
 		const aLng = includeAccommodation ? accommodationLng : null;
-		if (map && s.length > 0) {
-			renderRoute(s, aLat, aLng);
+		if (map && (r.length > 0 || sk.length > 0)) {
+			renderRoute(r, sk, aLat, aLng);
 		}
 	});
 
@@ -135,7 +140,7 @@
 		if (polyline) { polyline.setMap(null); polyline = null; }
 	}
 
-	function addMarkers(s: MapPlace[], hasAccomm: boolean, aLat: number, aLng: number) {
+	function addMarkers(route: MapPlace[], skipped: MapPlace[], hasAccomm: boolean, aLat: number, aLng: number) {
 		if (hasAccomm) {
 			gMarkers.push(new google.maps.Marker({
 				map,
@@ -150,49 +155,66 @@
 			}));
 		}
 
-			s.forEach((p, i) => {
-				const label = String(i + 1);
-				const fontSize = i >= 9 ? '13' : '15';
-				const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#18181b" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" fill="white" font-size="${fontSize}" font-weight="bold" font-family="Arial,Helvetica,sans-serif">${label}</text></svg>`;
-				const svgUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-				gMarkers.push(new google.maps.Marker({
-					map,
-					position: { lat: p.lat, lng: p.lng },
-					title: `${label}. ${p.name}`,
-					icon: {
-						url: svgUrl,
-						scaledSize: new google.maps.Size(32, 32),
-						anchor: new google.maps.Point(16, 16),
-					},
-					zIndex: 50,
-				}));
-			});
+		route.forEach((p, i) => {
+			const label = String(i + 1);
+			const fontSize = i >= 9 ? '13' : '15';
+			const fill = p.important ? '#f59e0b' : '#18181b';
+			const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="${fill}" stroke="white" stroke-width="2.5"/><text x="16" y="22" text-anchor="middle" fill="white" font-size="${fontSize}" font-weight="bold" font-family="Arial,Helvetica,sans-serif">${label}</text></svg>`;
+			const svgUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+			gMarkers.push(new google.maps.Marker({
+				map,
+				position: { lat: p.lat, lng: p.lng },
+				title: `${label}. ${p.name}`,
+				icon: {
+					url: svgUrl,
+					scaledSize: new google.maps.Size(32, 32),
+					anchor: new google.maps.Point(16, 16),
+				},
+				zIndex: p.important ? 60 : 50,
+			}));
+		});
+
+		skipped.forEach((p) => {
+			const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/><circle cx="14" cy="14" r="5" fill="#9ca3af"/></svg>`;
+			const svgUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+			gMarkers.push(new google.maps.Marker({
+				map,
+				position: { lat: p.lat, lng: p.lng },
+				title: `${p.name} (fuera de ruta)`,
+				icon: {
+					url: svgUrl,
+					scaledSize: new google.maps.Size(28, 28),
+					anchor: new google.maps.Point(14, 14),
+				},
+				zIndex: 30,
+			}));
+		});
 	}
 
-	async function renderRoute(s: MapPlace[], aLat: number | null, aLng: number | null) {
-		if (!map || s.length === 0) return;
+	async function renderRoute(route: MapPlace[], skipped: MapPlace[], aLat: number | null, aLng: number | null) {
+		if (!map || (route.length === 0 && skipped.length === 0)) return;
 
 		clearMapObjects();
 		const hasAccomm = aLat !== null && aLng !== null;
 
-		const allWaypoints = s.map((p) => ({
-			location: { lat: p.lat, lng: p.lng },
-			stopover: true,
-		}));
-
 		const MAX_WAYPOINTS = 25;
 
-		addMarkers(s, hasAccomm, aLat!, aLng!);
+		addMarkers(route, skipped, hasAccomm, aLat!, aLng!);
+
+		if (route.length === 0) {
+			routeInfo = null;
+			googleMapsLink = '';
+			return;
+		}
 
 		const { DirectionsService } = await importLibrary('routes');
 		let allPathPoints: google.maps.LatLng[] = [];
 		let totalDist = 0;
 		let totalDur = 0;
 
-		// Build ordered list of all stop points (accommodation + places)
 		const orderedStops: { lat: number; lng: number }[] = [];
 		if (hasAccomm) orderedStops.push({ lat: aLat!, lng: aLng! });
-		for (const p of s) orderedStops.push({ lat: p.lat, lng: p.lng });
+		for (const p of route) orderedStops.push({ lat: p.lat, lng: p.lng });
 		if (hasAccomm) orderedStops.push({ lat: aLat!, lng: aLng! });
 
 		try {
@@ -274,7 +296,7 @@
 			fullscreenControl: true,
 		});
 
-		if (sorted.length > 0) renderRoute(sorted, includeAccommodation ? accommodationLat : null, includeAccommodation ? accommodationLng : null);
+		if (sorted.length > 0) renderRoute(routePlaces, skippedPlaces, includeAccommodation ? accommodationLat : null, includeAccommodation ? accommodationLng : null);
 	});
 </script>
 
@@ -326,7 +348,10 @@
 			<div class="text-xs text-muted-foreground sm:text-sm">
 				<span class="font-medium text-foreground">{routeInfo.distance}</span> &middot;
 				<span class="font-medium text-foreground">{routeInfo.duration}</span> &middot;
-				{sorted.length} stops
+				{routePlaces.length} stops
+				{#if skippedPlaces.length > 0}
+					&middot; <span class="text-muted-foreground">{skippedPlaces.length} fuera de ruta</span>
+				{/if}
 			</div>
 			<div class="flex gap-2">
 				{#if googleMapsLink}

@@ -10,6 +10,8 @@
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import LoaderIcon from '@lucide/svelte/icons/loader-2';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import StarIcon from '@lucide/svelte/icons/star';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 
 	interface Place {
 		id: string;
@@ -34,6 +36,8 @@
 		destination?: string | null;
 		arrival_time?: string | null;
 		estimated_cost?: number | null;
+		important?: boolean;
+		skip_route?: boolean;
 	}
 
 	let {
@@ -87,6 +91,8 @@
 	let category = $state(snap.place?.category ?? 'place');
 	let estimatedCost = $state(snap.place?.estimated_cost ?? 0);
 	let mealType = $state(snap.place?.meal_type ?? '');
+	let important = $state(snap.place?.important ?? false);
+	let skipRoute = $state(snap.place?.skip_route ?? false);
 	let ticketFile: File | null = $state(null);
 	let ticketUrl = $state(snap.place?.ticket_url ?? '');
 	let error = $state('');
@@ -336,6 +342,8 @@
 			form.set('category', category);
 			form.set('estimated_cost', estimatedCost.toString());
 			form.set('meal_type', mealType);
+			form.set('important', important.toString());
+			form.set('skip_route', skipRoute.toString());
 			if (selectedDayId !== place.day_id) form.set('day_id', selectedDayId);
 			if (ticketFile) form.set('ticket_file', ticketFile);
 			if (selectedDetails) {
@@ -380,6 +388,8 @@
 			form.set('category', category);
 			form.set('estimated_cost', estimatedCost.toString());
 			form.set('meal_type', mealType);
+			form.set('important', important.toString());
+			form.set('skip_route', skipRoute.toString());
 			if (selectedDetails.photo_url) form.set('photo_url', selectedDetails.photo_url);
 			if (selectedDetails.description) form.set('description', selectedDetails.description);
 			if (selectedDetails.rating) form.set('rating', selectedDetails.rating.toString());
@@ -650,6 +660,29 @@
 						</div>
 					</div>
 				{/if}
+
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						onclick={() => (important = !important)}
+						class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors {important
+							? 'border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+							: 'border-border text-muted-foreground hover:border-amber-300'}"
+					>
+						<StarIcon class="size-3.5 {important ? 'fill-amber-400 text-amber-500' : ''}" />
+						Importante
+					</button>
+					<button
+						type="button"
+						onclick={() => (skipRoute = !skipRoute)}
+						class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors {skipRoute
+							? 'border-gray-400 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+							: 'border-border text-muted-foreground hover:border-gray-300'}"
+					>
+						<EyeOffIcon class="size-3.5" />
+						Fuera de ruta
+					</button>
+				</div>
 
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<div class="space-y-1">
