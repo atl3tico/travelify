@@ -843,17 +843,19 @@ import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 
 						<!-- Letter Badge -->
 						<div class="absolute top-2 left-2 flex items-center gap-1 sm:top-3 sm:left-3">
-							<span class="flex size-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
-								{index + 1}
-							</span>
+							{#if place.skip_route}
+								<span class="flex size-7 items-center justify-center rounded-full bg-gray-400 text-xs text-white shadow-lg sm:size-8 sm:text-sm">
+									<EyeOffIcon class="size-4" />
+								</span>
+							{:else}
+								{@const routeNum = activePlaces.slice(0, index).filter((p: any) => !p.skip_route).length + 1}
+								<span class="flex size-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white shadow-lg sm:size-8 sm:text-sm">
+									{routeNum}
+								</span>
+							{/if}
 							{#if place.important}
 								<span class="flex size-5 items-center justify-center rounded-full bg-amber-500 shadow-lg sm:size-6">
 									<StarIcon class="size-3 fill-white text-white sm:size-3.5" />
-								</span>
-							{/if}
-							{#if place.skip_route}
-								<span class="flex size-5 items-center justify-center rounded-full bg-gray-400 shadow-lg sm:size-6">
-									<EyeOffIcon class="size-3 text-white sm:size-3.5" />
 								</span>
 							{/if}
 						</div>
