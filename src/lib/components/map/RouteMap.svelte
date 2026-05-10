@@ -40,6 +40,7 @@
 	let polyline: google.maps.Polyline | null = null;
 	let gMarkers: google.maps.Marker[] = [];
 	let routeInfo: { distance: string; duration: string } | null = $state(null);
+	let routeLoading = $state(false);
 	let googleMapsLink = $state('');
 	// svelte-ignore state_referenced_locally
 	let travelMode: TravelMode = $state($state.snapshot(initialMode));
@@ -195,6 +196,7 @@
 		if (!map || (route.length === 0 && skipped.length === 0)) return;
 
 		clearMapObjects();
+		routeLoading = true;
 		const hasAccomm = aLat !== null && aLng !== null;
 
 		const MAX_WAYPOINTS = 25;
@@ -204,6 +206,7 @@
 		if (route.length === 0) {
 			routeInfo = null;
 			googleMapsLink = '';
+			routeLoading = false;
 			return;
 		}
 
@@ -277,8 +280,10 @@
 			const d = `${orderedStops[orderedStops.length - 1].lat},${orderedStops[orderedStops.length - 1].lng}`;
 			const wp = orderedStops.slice(1, -1).map((p) => `${p.lat},${p.lng}`).join('|');
 			googleMapsLink = `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&waypoints=${wp}&travelmode=${travelMode}`;
+			routeLoading = false;
 		} catch {
 			routeInfo = null;
+			routeLoading = false;
 		}
 	}
 
@@ -343,7 +348,13 @@
 		{/if}
 	</div>
 
-	{#if routeInfo}
+	{#if routeLoading}
+		<div class="flex flex-wrap items-center gap-2 pt-3 sm:gap-3">
+			<div class="text-xs text-muted-foreground sm:text-sm">
+				<span class="font-medium text-foreground">Calculando ruta...</span>
+			</div>
+		</div>
+	{:else if routeInfo}
 		<div class="flex flex-wrap items-center gap-2 pt-3 sm:gap-3">
 			<div class="text-xs text-muted-foreground sm:text-sm">
 				<span class="font-medium text-foreground">{routeInfo.distance}</span> &middot;
